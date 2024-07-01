@@ -1,0 +1,14 @@
+.Rproj.user
+.RData
+.Rhistory
+.vscode
+
+*.html
+*.pdf
+*.png
+*.svg
+
+__pycache__/
+
+som-data
+fig.outdir

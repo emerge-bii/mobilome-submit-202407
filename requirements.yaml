@@ -1,0 +1,28 @@
+name: mobilome_submit_v0.1
+channels:
+  - conda-forge
+  - bioconda
+  - defaults
+dependencies:
+  - python>=3.6
+  - r-base>=4.1.0
+  - r-essentials
+  - radian
+  - r-languageserver
+  - r-here
+  - r-cowplot
+  - r-gt<=0.6.0
+  - r-webshot
+  - r-ggalluvial
+  - r-ggrepel
+  - r-ggbeeswarm
+  - r-seqinr
+  - r-jsonlite
+  - r-ggupset
+  - r-bookdown
+  - r-devtools
+  - r-ggpubr
+  - r-hrbrthemes
+  - r-vegan
+  - r-betareg
+  - r-gggenes

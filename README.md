@@ -15,7 +15,7 @@ conda activate mobilome_paper_v*
 name it as `som-data`.
 - Option 2: If you are on OSC, it's already there under the EMERGE globus directory. You can make symlink named `som-data` by `ln -s /fs/ess/PAS1212/EMERGE_sharing/mobilome_paper/som-data`
 
-## reproduce figs
+# Reproduce figs
 
 ```bash
 ./generate-fig.sh

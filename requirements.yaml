@@ -15,6 +15,7 @@ dependencies:
   - r-webshot
   - r-ggalluvial
   - r-ggrepel
+  - r-ggtext
   - r-ggbeeswarm
   - r-seqinr
   - r-jsonlite

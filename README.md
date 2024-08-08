@@ -6,7 +6,7 @@
 git clone https://github.com/emerge-bii/mobilome-submit-202407.git
 cd mobilome-submit-202407
 ./install-dependencies.sh
-conda activate mobilome_paper_v*
+conda activate mobilome_submit_v0*
 ```
 
 ## download data package
@@ -22,4 +22,3 @@ name it as `som-data`.
 ```
 
 You can see figs main figures: Fig.1, Fig.2, Fig.4 and supplementary figures: fig.S2 - fig.S12 in `fig.outdir`. Note that Fig.3, Fig.5, fig.S1 were manually made so not included here.
-

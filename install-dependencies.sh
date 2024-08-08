@@ -3,7 +3,7 @@
 set -e
 
 # Install the conda environment:
-#mamba env create -f requirements.yaml --force
+mamba env create -f requirements.yaml --force
 
 source $(conda info --base)/etc/profile.d/conda.sh
 # Since the name changes with each version, make sure to pull the version

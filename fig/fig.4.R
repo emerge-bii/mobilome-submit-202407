@@ -67,8 +67,10 @@ df_tmp2 <- df2 %>% dplyr::group_by(ko, anno) %>%
     #dplyr::slice_head(n=5) %>%
     dplyr::filter(row_number()<=5 | anno=='RP')
 
+col_purple <- RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=1)
 df_tmp2 <- df_tmp2 %>% 
-    mutate(fill = if_else(anno == 'MGE\nrecombinase', 'grey50', 'NA'))
+    #mutate(fill = if_else(anno == 'MGE\nrecombinase', 'grey50', 'NA'))
+    mutate(fill = if_else(anno == 'MGE\nrecombinase', col_purple, 'NA'))
 color_pal <- df_tmp2$fill
 names(color_pal) <- df_tmp2$anno
 gg_a1 <- (ggplot(data=df_tmp2, aes(x=factor(anno, levels=anno %>% rev), y=cnt_metat, fill=anno)) + geom_col(color='grey20') 
@@ -98,7 +100,7 @@ gg_a2 <- (ggplot(data=df_rec_pivot_long %>% filter(name %in% c('ratio') & (!stri
                  aes(x=anno2, y=value, fill=anno2))
        + geom_boxplot(outlier.size = 0.8, outlier.shape = 21, outlier.alpha = 0.6)
        + ggpubr::stat_compare_means(label='p.signif', hide.ns=T, ref.group='RP', vjust=1)
-       + scale_y_percent(trans='log10', limits = c(0.001, 2))
+       + scale_y_continuous(trans='log10', labels = scales::percent, limits = c(0.001, 1.1))
        + scale_fill_manual(values = color_pal, guide='none')
        + theme_classic()
        + labs(x='', y='Percentage of genes active')
@@ -579,8 +581,8 @@ layout <- '
 ABC
 '
 fig6_extra <- list(
-    (fig7a & labs(y='Genomic context change') & coord_flip() & theme(axis.text.y = element_text(margin = margin('l', 0)))),
-    (fig9a & labs(y='Transcription') & coord_flip() & theme(axis.text.y = element_blank())),
+    (fig9a & labs(y='Transcription') & coord_flip() & theme(axis.text.y = element_text(margin = margin('l', 0)))),
+    (fig7a & labs(y='Genomic context change') & coord_flip() & theme(axis.text.y = element_blank())),
     (fig8a & labs(y='Partial carriage by population') & coord_flip() & theme(axis.text.y = element_blank()))
 ) %>% wrap_plots(design=layout, widths = c(1, 1, 1)) + plot_layout(tag_level = 'new')
 fig6_extra <- wrap_elements(full=fig6_extra)
@@ -595,8 +597,10 @@ fig6_add_extra <- fig6a + fig6cd + fig6b + fig6_extra +
     plot_layout(widths = c(2.5,4), heights = c(1.2,1.2,1), design=layout, guides = 'collect') + 
     plot_annotation(tag_levels = 'A')
 p <- fig6_add_extra
+
 figdir <- here::here('fig.outdir')
 dir.create(figdir)
+
 figfile <- here::here(figdir, 'fig.4.metat.add_extra.pdf')
 ggsave(figfile, p, width = 7.2, height = 8, dpi = 300, device = 'pdf')
 

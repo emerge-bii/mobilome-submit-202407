@@ -21,4 +21,5 @@ name it as `som-data`.
 ./generate-fig.sh
 ```
 
-You can see figs Fig.1, Fig.2, Fig.4 in `fig.outdir`. Note that Fig.3 and Fig.5 were manually made so not included here. SOM figs is to be added.
+You can see figs main figures: Fig.1, Fig.2, Fig.4 and supplementary figures: fig.S2 - fig.S12 in `fig.outdir`. Note that Fig.3, Fig.5, fig.S1 were manually made so not included here.
+

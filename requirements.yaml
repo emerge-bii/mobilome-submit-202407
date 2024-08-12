@@ -27,3 +27,4 @@ dependencies:
   - r-vegan
   - r-betareg
   - r-gggenes
+  - r-patchwork

@@ -56,6 +56,7 @@ df_sum <- df_sum %>% dplyr::filter(total>=1)
 unstable_otu_vec <- df_sum %>% dplyr::filter(low_ani_cnt>=1) %>% dplyr::pull(OTU)
 df_merged <- df_merged %>% dplyr::filter(OTU %in% df_sum$OTU)
 
+df_merged_300 <- df_merged
 
 ###
 # all data per MGE type
@@ -360,6 +361,8 @@ df_sum <- df_sum %>% dplyr::filter(total>=1)
 unstable_otu_vec <- df_sum %>% dplyr::filter(low_ani_cnt>=1) %>% dplyr::pull(OTU)
 df_merged <- df_merged %>% dplyr::filter(OTU %in% df_sum$OTU)
 
+df_merged_600 <- df_merged
+
 ###
 # all data per MGE type
 ###
@@ -397,6 +400,7 @@ gg <- (ggplot(data=df_all_summary, aes(x=origin, y=transfer_type_prop, fill=tran
 #fig7a <- gg
 
 df_600 <- df_all_summary %>% mutate(cutoff=600)
+
 
 
 ###
@@ -457,6 +461,9 @@ df_sum <- df_sum %>% dplyr::filter(total>=1)
 unstable_otu_vec <- df_sum %>% dplyr::filter(low_ani_cnt>=1) %>% dplyr::pull(OTU)
 df_merged <- df_merged %>% dplyr::filter(OTU %in% df_sum$OTU)
 
+total_otu_vec_1000 <- df_sum %>% dplyr::pull(OTU)
+total_seqname_vec_1000 <- union(df_merged$seqname1, df_merged$seqname2)
+
 ###
 # all data per MGE type
 ###
@@ -495,23 +502,123 @@ gg <- (ggplot(data=df_all_summary, aes(x=origin, y=transfer_type_prop, fill=tran
 df_1000 <- df_all_summary %>% mutate(cutoff = 1000)
 
 
-df_merged <- rbind(df_300, df_600, df_1000)
+###
+# 600bp neighborhood; screened by total_otu_vec_1000 or total_seqname_vec_1000
+###
+
+#df_merged <- df_merged_600 %>% dplyr::filter(OTU %in% total_otu_vec_1000)
+df_merged <- df_merged_600 %>% dplyr::filter(seqname1 %in% total_seqname_vec_1000 & seqname2 %in% total_seqname_vec_1000)
+
+###
+# all data per MGE type
+###
+
+df_all <- df_merged %>%
+    dplyr::group_by(origin, OTU) %>%
+    dplyr::summarise(low_ani_cnt=sum(low_ani<1), total=n()) %>%
+    dplyr::mutate(low_ani_perc=low_ani_cnt/total*100) %>%
+    #dplyr::mutate(transfer_type=if_else(OTU %in% unstable_otu_vec, unstable, stable)) %>%
+    dplyr::mutate(transfer_type=if_else(low_ani_cnt>=1, unstable, stable)) %>%
+    dplyr::mutate(transfer_type=factor(transfer_type, levels=c(unstable, stable)))
+
+
+df_cnt <- df_all %>% group_by(origin) %>% summarise(n=n())
+df_all_summary <- df_all %>% 
+    group_by(origin, transfer_type) %>% 
+    summarise(transfer_type_cnt=n()) %>% 
+    mutate(transfer_type_prop=transfer_type_cnt/sum(transfer_type_cnt)) %>%
+    filter(transfer_type==unstable)
+
+
+options(repr.plot.width=2.5, repr.plot.height=3, repr.plot.res=300)
+gg <- (ggplot(data=df_all_summary, aes(x=origin, y=transfer_type_prop, fill=transfer_type))
+       + geom_col()
+       #+ geom_text(stat='count', aes(label=..count..))
+       #+ geom_text(data=df_cnt, mapping=aes(x=origin, y=max(df_all_summary %>% pull(transfer_type_prop)) * 1.05, label=n, fill=unstable), size=1.5)
+       #+ facet_wrap(~origin, ncol=1, scale='free_y')
+       + theme_classic()
+       + theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1))
+       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
+       + scale_y_continuous(labels = scales::percent)
+       + labs(x='', y='Percentage of unstable OTUs')
+       )
+
+#fig7a <- gg
+
+df_600_filt <- df_all_summary %>% mutate(cutoff=600)
+
+
+###
+# 300bp neighborhood; screened by total_otu_vec_1000 or total_seqname_vec_1000
+###
+
+#df_merged <- df_merged_300 %>% dplyr::filter(OTU %in% total_otu_vec_1000)
+df_merged <- df_merged_300 %>% dplyr::filter(seqname1 %in% total_seqname_vec_1000 & seqname2 %in% total_seqname_vec_1000)
+
+###
+# all data per MGE type
+###
+
+df_all <- df_merged %>%
+    dplyr::group_by(origin, OTU) %>%
+    dplyr::summarise(low_ani_cnt=sum(low_ani<1), total=n()) %>%
+    dplyr::mutate(low_ani_perc=low_ani_cnt/total*100) %>%
+    #dplyr::mutate(transfer_type=if_else(OTU %in% unstable_otu_vec, unstable, stable)) %>%
+    dplyr::mutate(transfer_type=if_else(low_ani_cnt>=1, unstable, stable)) %>%
+    dplyr::mutate(transfer_type=factor(transfer_type, levels=c(unstable, stable)))
+
+
+df_cnt <- df_all %>% group_by(origin) %>% summarise(n=n())
+df_all_summary <- df_all %>% 
+    group_by(origin, transfer_type) %>% 
+    summarise(transfer_type_cnt=n()) %>% 
+    mutate(transfer_type_prop=transfer_type_cnt/sum(transfer_type_cnt)) %>%
+    filter(transfer_type==unstable)
+
+
+options(repr.plot.width=2.5, repr.plot.height=3, repr.plot.res=300)
+gg <- (ggplot(data=df_all_summary, aes(x=origin, y=transfer_type_prop, fill=transfer_type))
+       + geom_col()
+       #+ geom_text(stat='count', aes(label=..count..))
+       #+ geom_text(data=df_cnt, mapping=aes(x=origin, y=max(df_all_summary %>% pull(transfer_type_prop)) * 1.05, label=n, fill=unstable), size=1.5)
+       #+ facet_wrap(~origin, ncol=1, scale='free_y')
+       + theme_classic()
+       + theme(axis.text.x = element_text(angle=45, vjust=1, hjust=1))
+       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
+       + scale_y_continuous(labels = scales::percent)
+       + labs(x='', y='Percentage of unstable OTUs')
+       )
+
+#fig7a <- gg
+
+df_300_filt <- df_all_summary %>% mutate(cutoff=300)
+
+
+df_all_summary_merged <- rbind(df_300, df_600, df_1000)
+df_all_summary_filt_merged <- merged <- rbind(df_300_filt, df_600_filt, df_1000)
 
 options(repr.plot.width = 3, repr.plot.height = 4, repr.plot.res=300)
-gg_sensitivity <- ggplot(data=df_merged, aes(x=origin, y=transfer_type_prop)) +
+gg_sensitivity <- ggplot(data=df_all_summary_merged, aes(x=origin, y=transfer_type_prop)) +
     geom_col(fill='white', color='grey20') + facet_wrap(~cutoff, ncol = 1) +
     scale_y_continuous(labels=scales::percent) +
     labs(x='', y="Unstable OTU (%)") +
     theme_classic() +
     guides(x = guide_axis(angle = 45))
 
+options(repr.plot.width = 3, repr.plot.height = 4, repr.plot.res=300)
+gg_sensitivity_filt <- ggplot(data=df_all_summary_filt_merged, aes(x=origin, y=transfer_type_prop)) +
+    geom_col(fill='white', color='grey20') + facet_wrap(~cutoff, ncol = 1) +
+    scale_y_continuous(labels=scales::percent) +
+    labs(x='', y="Unstable OTU (%)") +
+    theme_classic() +
+    guides(x = guide_axis(angle = 45))
 
 options(repr.plot.width=7.2, repr.plot.height=6, repr.plot.res=300)
 layout <-'
 ABC
 DDD
 '
-p <- gg_sensitivity + (fig7b & labs(x='', y="Unstable OTUs (%)")) + fig7c + (fig7d & labs(x='', y="Unstable OTUs (%)")) + plot_layout(design = layout, heights = c(1.2, 1)) + plot_annotation(tag_levels = 'A')
+p <- gg_sensitivity_filt + (fig7b & labs(x='', y="")) + fig7c + (fig7d & labs(x='', y="Unstable OTUs (%)")) + plot_layout(design = layout, heights = c(1.2, 1)) + plot_annotation(tag_levels = 'A')
 
 figdir <- here::here('fig.outdir')
 dir.create(figdir)

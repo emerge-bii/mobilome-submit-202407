@@ -3,7 +3,7 @@ source(here::here('setup.R'))
 ### metaT on recomibnase OTU stability or activity
 ### cov_0d9
 
-allinfo_tab <- 'som-data/fig-data/metat/add-hiseq-shared/allinfo.sep_rec_ori.metat_cov_ge0d9.metag_cov_ge0.metat_vs_metag.tsv'
+allinfo_tab <- '../metat.gene_cnt.tsv'
 rp_gene_lst_f <- 'som-data/fig-data/contig_taxa/rp/rp.ko.bac_arc_shared.list'
 rec_f <- 'som-data/mge_recombinase.tsv'
 clust_f <- 'som-data/mge_recombinase.clustering.100aai.tsv'
@@ -92,14 +92,13 @@ df_dummy_summary <- df_dummy %>%
 
 options(repr.plot.width=3, repr.plot.height=6, repr.plot.res=300)
 df_cnt <- df_dummy %>% dplyr::group_by(Year, origin) %>% dplyr::summarise(n=n())
-gg <- (ggplot(data=df_dummy_summary, aes(x=Year, y=carriage_type_prop, fill=partial_carriage))
-       + geom_col()
+gg <- (ggplot(data=df_dummy_summary, aes(x=Year, y=carriage_type_prop))
+       + geom_col(fill='white', color='grey20')
        #+ geom_text(data=df_cnt, mapping=aes(x=Year, y=max(df_dummy_summary %>% pull(carriage_type_prop)) * 1.05, label=n, fill=unstable), size=1.5)
        + facet_wrap(~origin, ncol=1, scales='free_y')
        + theme_classic()
        + theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1))
-       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
-       + scale_y_percent(accuracy = 0.1L)
+       + scale_y_percent(accuracy = 0.1)
        + labs(x='', y="Active OTUs (%)")
        )
 
@@ -124,15 +123,15 @@ df_dummy_summary <- df_dummy %>%
 
 options(repr.plot.width=1.5, repr.plot.height=6, repr.plot.res=300)
 df_cnt <- df_dummy %>% dplyr::group_by(Habitat, origin) %>% dplyr::summarise(n=n())
-gg <- (ggplot(data=df_dummy_summary, aes(x=Habitat, y=carriage_type_prop, fill=partial_carriage))
-       + geom_col()
+gg <- (ggplot(data=df_dummy_summary, aes(x=Habitat, y=carriage_type_prop))
+       + geom_col(fill='white', color='grey20')
        #+ geom_text(data=df_cnt, mapping=aes(x=Habitat, y=max(df_dummy_summary %>% pull(carriage_type_prop)) * 1.05, label=n, fill=unstable), size=1.5)
        + facet_wrap(~origin, ncol=1, scales='free_y')
        + theme_classic()
        + theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1))
-       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
-       + scale_y_percent(accuracy = 0.1L)
-       + labs(x='', y="Active OTUs (%)")
+       + scale_y_percent(accuracy = 0.1)
+       #+ labs(x='', y="Active OTUs (%)")
+       + labs(x='', y="")
        )
 
 fig.b <- gg
@@ -156,13 +155,12 @@ df_dummy_summary <- df_dummy %>%
 
 options(repr.plot.width=2, repr.plot.height=6, repr.plot.res=300)
 df_cnt <- df_dummy %>% dplyr::group_by(DepthLumping, origin) %>% dplyr::summarise(n=n())
-gg <- (ggplot(data=df_dummy_summary, aes(x=DepthLumping, y=carriage_type_prop, fill=partial_carriage))
-       + geom_col()
+gg <- (ggplot(data=df_dummy_summary, aes(x=DepthLumping, y=carriage_type_prop))
+       + geom_col(fill='white', color='grey20')
        #+ geom_text(data=df_cnt, mapping=aes(x=DepthLumping, y=max(df_dummy_summary %>% pull(carriage_type_prop)) * 1.05, label=n, fill=unstable), size=1.5)
        + facet_wrap(~origin, ncol=1, scales='free_y')
        + theme_classic()
        + theme(axis.text.x = element_text(angle=45, hjust=1, vjust=1))
-       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
        + scale_y_percent(accuracy = 0.1L)
        + labs(x='', y="Active OTUs (%)")
        )
@@ -193,13 +191,12 @@ df_dummy_summary <- df_dummy_summary %>%
 
 
 options(repr.plot.width=1.5, repr.plot.height=6, repr.plot.res=300)
-gg <- (ggplot(data=df_dummy_summary, aes(x=domain, y=carriage_type_prop, fill=partial_carriage))
-       + geom_col()
+gg <- (ggplot(data=df_dummy_summary, aes(x=domain, y=carriage_type_prop))
+       + geom_col(fill='white', color='grey20')
        #+ geom_text(mapping=aes(x=domain, y=max(df_dummy_summary %>% pull(carriage_type_prop)) * 1.05, label=carriage_type_sum, fill=unstable), size=7/.pt)
        + facet_wrap(~origin, ncol=1, scales='free_y')
        + theme_classic()
        + theme(axis.text.x = ggtext::element_markdown(angle=45, hjust=1, vjust=1))
-       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
        + scale_y_percent()
        + labs(x='', y="Active OTUs (%)")
        )
@@ -245,13 +242,12 @@ df_dummy_summary <- df_dummy_summary %>%
 
 
 options(repr.plot.width=7, repr.plot.height=6, repr.plot.res=300)
-gg <- (ggplot(data=df_dummy_summary, aes(x=phylum, y=carriage_type_prop, fill=partial_carriage))
-       + geom_col()
+gg <- (ggplot(data=df_dummy_summary, aes(x=phylum, y=carriage_type_prop))
+       + geom_col(fill='white', color='grey20')
        #+ geom_text(aes(x=phylum, y=max(df_dummy_summary %>% pull(carriage_type_prop)) * 1.05, label=carriage_type_sum, fill=unstable), size=1.5)
        + facet_wrap(~origin, ncol=1, scales = 'free_y')
        + theme_classic()
        + theme(axis.text.x = ggtext::element_markdown(angle=45, hjust=1, vjust=1))
-       + scale_fill_brewer(palette = 'Dark2', name=element_blank(), guide='none')
        + scale_y_percent()
        + labs(x='', y="Active OTUs (%)")
        )
@@ -381,7 +377,7 @@ layout <- '
 ABC
 DDD'
 
-p <- fig.s6b + (fig.a & scale_y_percent(accuracy = 0.1L)) + (fig.b & scale_y_percent(accuracy = 0.1L) & labs(x='', y="Active OTUs (%)")) + (fig.c & scale_y_percent(accuracy = 0.1L)) + 
+p <- fig.s6b + (fig.a & scale_y_percent(accuracy = 0.1)) + (fig.b & scale_y_percent(accuracy = 0.1) & labs(x='', y="Active OTUs (%)")) + (fig.c & scale_y_percent(accuracy = 0.1)) + 
     plot_layout(design = layout, widths = c(3, 2, 1)) + plot_annotation(tag_levels = 'A')
 
 figdir <- here::here('fig.outdir')

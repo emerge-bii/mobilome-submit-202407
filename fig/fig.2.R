@@ -6,7 +6,7 @@ source(here::here('setup.R'))
 
 ### dirctories
 v2_mags_directory <- here::here("som-data", "fig-data", "emerge_mags_v2")
-recombinase_directory <- here::here("som-data", "fig-data", "20230123_mge_recombinase", "recombinase")
+recombinase_directory <- here::here("som-data")
 v3_contig_tracking_directory <- here::here("som-data", "fig-data", "contig_tracking_v3")
 recombinase_clustering_directory <- here::here("som-data", "fig-data", "recombinase_clustering_v1")
 
@@ -86,7 +86,7 @@ recombinase_clustering <- read_recombinase_clustering()
 
 ### load recombinase all info file
 read_recombinase_contig_info <- function() {
-    d <- read_tsv(here(recombinase_directory, "recombinase.allinfo.tsv"), show_col_types = FALSE)
+    d <- read_tsv(here(recombinase_directory, "mge_recombinase.tsv"), show_col_types = FALSE)
     return(d)
 }
 recombinase_contig_info <- read_recombinase_contig_info()

@@ -8,7 +8,7 @@ source(here::here('setup.R'))
 # Fig.1.B
 ###
 
-tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/recombinase.allinfo.tsv'
+tab_f <- 'som-data/mge_recombinase.tsv'
 
 df <- read_tsv(tab_f, col_types = cols())
 
@@ -137,7 +137,7 @@ fig1d <- gg
 # Fig.1.E
 ###
 
-tab_f <- here::here('som-data', 'fig-data', '20230123_mge_recombinase', 'recombinase', 'recombinase.allinfo.tsv')
+tab_f <- here::here('som-data', 'mge_recombinase.tsv')
 scg_tab_f <- here::here('som-data', 'fig-data', 'contig_taxa', 'rp', 'all_info.all_gene.fix_domain.tsv')
 rp_gene_lst_f <- here::here('som-data', 'fig-data', 'contig_taxa', 'rp', 'rp.ko.bac_arc_shared.list')
 
@@ -178,7 +178,7 @@ df_add_scg <- df %>% dplyr::filter(contig_length>=3000 & (!is.na(Habitat))) %>%
 
 # set dirctories
 v2_mags_directory <- here("som-data", "fig-data", "emerge_mags_v2")
-recombinase_directory <- here("som-data", "fig-data", "20230123_mge_recombinase", "recombinase")
+recombinase_directory <- here("som-data")
 v3_contig_tracking_directory <- here("som-data", "fig-data", "contig_tracking_v3")
 recombinase_clustering_directory <- here("som-data", "fig-data", "recombinase_clustering_v1")
 
@@ -204,7 +204,7 @@ recombinase_clustering <- read_recombinase_clustering()
 
 ### load recombinase all info file
 read_recombinase_contig_info <- function() {
-    d <- read_tsv(here(recombinase_directory, "recombinase.allinfo.tsv"), show_col_types = FALSE)
+    d <- read_tsv(here(recombinase_directory, "mge_recombinase.tsv"), show_col_types = FALSE)
     return(d)
 }
 recombinase_contig_info <- read_recombinase_contig_info()

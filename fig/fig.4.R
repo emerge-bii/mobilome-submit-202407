@@ -6,8 +6,8 @@ setwd('som-data/fig-data')
 # Fig.4.A
 ############
 
-allinfo_tab <- 'metat/add-hiseq-shared/allinfo.sep_rec_ori.metat_cov_ge0d9.metag_cov_ge0.metat_vs_metag.tsv'
-sanity_check_tab <- 'metat/add-hiseq-shared/all.sample.read_mapped_dirseq.contig_ge10k.stats'
+allinfo_tab <- '../metat.gene_cnt.tsv'
+sanity_check_tab <- '../sample.metat.qc.tsv'
 rp_gene_lst_f <- 'contig_taxa/rp/rp.ko.bac_arc_shared.list'
 rp_gene_vec <- readLines(rp_gene_lst_f)
 mge_levels <- c("IS_Tn", "Phage", "CE", "Integron", "ambiguous")
@@ -194,8 +194,8 @@ fig6b <- wrap_elements(full=fig6b)
 
 gene_tab_vec <- c('contig_taxa/rp/all_info.all_gene.fix_domain.tsv')
 active_gene_list_f <- 'metat/add-hiseq-shared/all.sample.cov_0d9.active.list'
-rec_tab_f <- '20230123_mge_recombinase/recombinase/recombinase.allinfo.tsv'
-sanity_check_tab <- 'metat/add-hiseq-shared/all.sample.read_mapped_dirseq.contig_ge10k.stats'
+rec_tab_f <- '../mge_recombinase.tsv'
+sanity_check_tab <- '../sample.metat.qc.tsv'
 non_rp_gene_vec <- c('IS_Tn', 'Phage')
 rp_gene_lst_f <- 'contig_taxa/rp/rp.ko.bac_arc_shared.list'
 rp_gene_vec <- readLines(rp_gene_lst_f)
@@ -365,9 +365,9 @@ fig6cd <- wrap_elements(full=fig6cd)
 # w/o OTU count label at top
 ###
 
-pw_iden_f <- 'stability/all.gene_neighbor.blastn.pw_iden_within_cluster.sep_ends_sum.tsv'
-clust_f <- 'stability/gene.prefilter.hmmtblout.tophit.cdhit1d0.s_eq_1.faa.clstr.tsv'
-rec_allinfo_f <- '20230123_mge_recombinase/recombinase/recombinase.allinfo.tsv'
+pw_iden_f <- '../genomic_neighborhood.pairwise_ani.tsv'
+clust_f <- '../mge_recombinase.clustering.100aai.tsv'
+rec_allinfo_f <- '../mge_recombinase.tsv'
 mge_levels <- c("IS_Tn", "Phage", "CE", "Integron", "ambiguous")
 mge_colours <- ggsci::pal_npg()(4) %>% c('grey50')
 names(mge_colours) <- mge_levels
@@ -511,10 +511,10 @@ fig8a <- gg
 #################
 ### metaT on recomibnase OTU stability or activity
 ### cov_0d9
-tab_f <- 'stability/gene.prefilter.hmmtblout.tophit.cdhit1d0.s_eq_1.faa.clstr.tsv'
-rec_tab_f <- '20230123_mge_recombinase/recombinase/recombinase.allinfo.tsv'
+tab_f <- '../mge_recombinase.clustering.100aai.tsv'
+rec_tab_f <- '../mge_recombinase.tsv'
 active_gene_list_f <- 'metat/add-hiseq-shared/all.sample.cov_0d9.active.list'
-sanity_check_tab <- 'metat/add-hiseq-shared/all.sample.read_mapped_dirseq.contig_ge10k.stats'
+sanity_check_tab <- '../sample.metat.qc.tsv'
 
 mge_levels <- c("IS_Tn", "Phage", "CE", "Integron", "ambiguous")
 mge_colours <- ggsci::pal_npg()(4) %>% c('grey50')

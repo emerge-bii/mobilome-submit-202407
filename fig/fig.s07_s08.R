@@ -308,7 +308,7 @@ gg <- (ggplot(df_add_scg7, aes(x=phylum, y=mge_per_cell, fill=phylum))
        #+ theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1))
        #+ facet_wrap(~origin2, nrow=1, scales='free_x')
        + facet_wrap(~origin2, nrow=1, scales='free_x')
-       + labs(x='', y='MGE recombinase number per genome')
+       + labs(x='', y='MGE recombinases per genome (contig)')
        #+ ggpubr::stat_compare_means(mapping=aes(group=Habitat), label='p.signif', hide.ns=F)
        + theme_classic()
        + coord_flip()
@@ -680,6 +680,64 @@ genomes_comp_plot_mag_inset <- mag_contigs %>%
   theme_classic()
 
 
+### Fig.S8.C
+
+tmp_df <- mag_contigs %>%
+  group_by(origin2, phylum) %>%
+  summarise(n_per_origin_per_phylum = n()) %>%
+  left_join(phylum_species_counts) %>%
+  mutate(mge_per_cell_global = sum(n_per_origin_per_phylum) / sum(n_genomes)) %>%
+  mutate(
+    phylum = str_remove(phylum, "p__"),
+    phylum = ifelse(phylum %in% phyla_levels, phylum, "Other"),
+    phylum = factor(phylum, levels = phyla_levels %>% rev)
+    ) %>%
+  filter(phylum != 'Other') %>%
+  mutate(mge_per_cell = n_per_origin_per_phylum / n_genomes) %>%
+  mutate(mge_per_cell_mean_across_phylum = mean(mge_per_cell)) %>%
+  filter(origin2 != 'ambiguous')
+
+tmp_df2 <- mag_contigs %>%
+  group_by(origin2, phylum, MAG) %>%
+  summarise(n_per_mag = n()) %>%
+  filter(origin2 != 'ambiguous')
+
+
+### boxplot
+gg <- (ggplot(tmp_df2, aes(x=phylum, y=n_per_mag, fill=phylum))
+       + geom_boxplot(position = position_dodge(preserve = 'single'))
+       #+ geom_col()
+       + geom_hline(data= tmp_df %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept=mge_per_cell_global), color='red', linetype='dashed')
+       + geom_hline(data= tmp_df %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept = mge_per_cell_mean_across_phylum), color='blue', linetype='dashed')
+       + scale_fill_manual(values=phyla_colours_lines, breaks = phyla_levels, guide='none')
+       #+ theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1))
+       #+ facet_wrap(~origin2, nrow=1, scales='free_x')
+       + facet_wrap(~origin2, nrow=1, scales='free_x')
+       + labs(x='', y='MGE recombinase number per genome')
+       #+ ggpubr::stat_compare_means(mapping=aes(group=Habitat), label='p.signif', hide.ns=F)
+       + theme_classic()
+       + coord_flip()
+)
+
+### bar chart to be consistent with contig fig
+gg <- (ggplot(tmp_df, aes(x=phylum, y=mge_per_cell, fill=phylum))
+       #+ geom_boxplot(position = position_dodge(preserve = 'single'))
+       + geom_col()
+       + geom_hline(data=. %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept=mge_per_cell_global), color='red', linetype='dashed')
+       + geom_hline(data=. %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept = mge_per_cell_mean_across_phylum), color='blue', linetype='dashed')
+       + scale_fill_manual(values=phyla_colours_lines, breaks = phyla_levels, guide='none')
+       #+ theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1))
+       #+ facet_wrap(~origin2, nrow=1, scales='free_x')
+       + facet_wrap(~origin2, nrow=1, scales='free_x')
+       + labs(x='', y='MGE recombinases per genome (MAG)')
+       #+ ggpubr::stat_compare_means(mapping=aes(group=Habitat), label='p.signif', hide.ns=F)
+       + theme_classic()
+       + coord_flip()
+)
+
+fig.s8.c <- wrap_elements(full=gg)
+
+
 ### fig.S7
 
 options(repr.plot.width=7.2, repr.plot.height=9, repr.plot.res=300)
@@ -697,26 +755,30 @@ dir.create(figdir)
 figfile <- here::here(figdir, 'fig.s07.host_lineage.contig.pdf')
 ggsave(figfile, width = 7.2, height = 9, dpi = 300, device = 'pdf')
 
-#figfile <- here::here(figdir, 'fig.s07.host_lineage.contig.png')
-#ggsave(figfile, width = 7.2, height = 9, dpi = 300, device = 'png')
+figfile <- here::here(figdir, 'fig.s07.host_lineage.contig.png')
+ggsave(figfile, width = 7.2, height = 9, dpi = 300, device = 'png')
 
 
 ###
 # fig.S08
 ###
-options(repr.plot.width=7.2, repr.plot.height=6, repr.plot.res=300)
-p <- (genomes_comp_plot & labs(y='MGE recombinase number (contig)', tag='A')) + genomes_comp_plot_inset + 
-    (genomes_comp_plot_mag & labs(y='MGE recombinase number (MAG)', tag='B')) + genomes_comp_plot_mag_inset + 
-    plot_layout(widths=c(2, 4.2), ncol = 2)
+options(repr.plot.width=7.2, repr.plot.height=9, repr.plot.res=300)
+layout <- '
+AA
+BC
+DE
+'
+p <- (fig.s8.c & labs(tag='A')) + (genomes_comp_plot & labs(y='MGE recombinase number (contig)', tag='B')) + genomes_comp_plot_inset + 
+    (genomes_comp_plot_mag & labs(y='MGE recombinase number (MAG)', tag='C')) + genomes_comp_plot_mag_inset + plot_layout(design = layout, widths=c(2, 4.2))
 
 figdir <- here::here('fig.outdir')
 dir.create(figdir)
 
-figfile <- here::here(figdir, 'fig.s08.host_lineage.contig_vs_mag.pdf')
-ggsave(figfile, width = 7.2, height = 6, dpi = 300, device = 'pdf')
+figfile <- here::here(figdir, 'fig.s08.host_lineage.contig_vs_mag.v2.pdf')
+ggsave(figfile, width = 7.2, height = 9, dpi = 300, device = 'pdf')
 
-#figfile <- here::here(figdir, 'fig.s08.host_lineage.contig_vs_mag.png')
-#ggsave(figfile, width = 7.2, height = 6, dpi = 300, device = 'png')
+figfile <- here::here(figdir, 'fig.s08.host_lineage.contig_vs_mag.v2.png')
+ggsave(figfile, width = 7.2, height = 9, dpi = 300, device = 'png')
 
 
 

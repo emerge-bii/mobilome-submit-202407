@@ -276,16 +276,63 @@ clusters <- recombinase_clustering %>%
   rename(recombinase = contig, AAI_100 = `100_AAI`, AAI_90 = `90_AAI`)
 
 
+### select only MAGs binned from contigs in samples used in this study
+### filter redudant MAGs wihtin the same sample
+mag_metadata_f <- 'som-data/mag.tsv'
+sample_metadata_f <- 'som-data/sample.metadata.tsv' # only for filed samples
+
+sample_metadata_df <- read_tsv(sample_metadata_f, col_types = cols()) %>%
+    mutate(seq_model_simple = if_else(stringr::str_detect(seq_model, 'NovaSeq'), 'JGI', 'Cronin'))
+
+mag_metadata_df_ori <- read_tsv(mag_metadata_f, col_types = cols()) %>% rename(mag_name=MAG) 
+
+mag_metadata_df <- mag_metadata_df_ori %>%
+    filter(stringr::str_detect(SampleID__, 'MainAutochamber')) %>%
+    filter(folder %in% c('JGI', 'Cronin_v1', 'Cronin_v2')) %>%
+    mutate(seq_model_simple = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
+    left_join(sample_metadata_df, by = c('SampleID__', 'seq_model_simple')) %>%
+    left_join(
+        mag_derep_clusters_checkm2 %>% select(mag_name=genome, mag_cluster=representative)
+    ) %>%
+    group_by(Sample, mag_cluster) %>%
+    arrange(desc(Completeness)) %>%
+    filter(row_number() == 1) %>%
+    ungroup() %>%
+    filter(!is.na(Sample))
+
+mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
+
+
 ### re-process contig tracking, by jiarong
 df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
-  select(contig, genome_contig) %>%
-  group_by(genome_contig) %>%
-  filter(row_number()==1) %>% # make sure each MAG contig (genome_contig) has at most 1 match
-  ungroup()
+  select(contig, genome_contig, MAG) %>%
+  distinct() %>%
+  inner_join(
+    recombinase_contig_info %>%
+      select(contig, Sample) %>%
+      distinct()
+    ) %>%
+  inner_join(mag2sample_df) %>%
+  select(contig, genome_contig, Sample, mag_sample) %>%
+  filter(Sample == mag_sample) %>%
+  select(contig, genome_contig, Sample)
+
+n_contig_binned <- df_contig_tracking_filt %>% nrow
 
 mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
   inner_join(df_contig_tracking_filt)
 
+n_rec_binned <- mge_to_mags_checkm2_filt %>% nrow
+# total recombinase encoding contigs >= 3kbp
+n_contig_total <- recombinase_contig_info %>% 
+    filter(contig_length>=3000) %>% 
+    select(contig, contig_length) %>% 
+    distinct() %>% nrow
+# some stats
+cat('[INFO] # of contigs >=3kb binned: ', n_contig_binned, '\n')
+cat('[INFO] # of recombinase binned: ', n_rec_binned, '\n')
+cat('[INFO] # of contits >=3kb: ', n_contig_total, '\n')
+cat('[INFO] % of contigs >=3kb binned: ', scales::percent(n_contig_binned/n_contig_total, accuracy = .1), '\n')
 
 # contigs with CheckM2 MAG taxonomy
 mag_contigs <- mge_to_mags_checkm2_filt %>%
@@ -302,16 +349,17 @@ mag_contigs <- mge_to_mags_checkm2_filt %>%
       distinct()
     )
 
-
 df_mag_per_cluster <- mag_contigs %>% group_by(MAG) %>%
     summarise(mge_per_cell = n()) %>% ungroup() %>%
-    right_join(mag_derep_clusters_checkm2, by=c('MAG'='genome')) %>%
     right_join(
+        mag_derep_clusters_checkm2 %>% filter(genome %in% mag2sample_df$MAG), 
+        by=c('MAG'='genome')
+    ) %>%
+    left_join(
         read_tsv(checkm2_report_f, col_types = cols()) %>% select(MAG=Name, completeness=Completeness, contamination=Contamination),
         by = c('MAG')
     ) %>%
     mutate(mge_per_cell = mge_per_cell * 100/completeness) %>%
-    filter(stringr::str_detect(MAG, regex('^201|^33'))) %>% # select data used for rec identification
     mutate(mge_per_cell=if_else(is.na(mge_per_cell), 0, mge_per_cell)) %>%
     mutate(source='mag') %>%
     select(source, mge_per_cell)

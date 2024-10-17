@@ -149,15 +149,63 @@ clusters <- recombinase_clustering %>%
   pivot_wider(names_from = cluster, values_from = representative) %>%
   rename(recombinase = contig, AAI_100 = `100_AAI`, AAI_90 = `90_AAI`)
 
+### select only MAGs binned from contigs in samples used in this study
+### filter redudant MAGs wihtin the same sample
+mag_metadata_f <- 'som-data/mag.tsv'
+sample_metadata_f <- 'som-data/sample.metadata.tsv' # only for filed samples
+
+sample_metadata_df <- read_tsv(sample_metadata_f, col_types = cols()) %>%
+    mutate(seq_model_simple = if_else(stringr::str_detect(seq_model, 'NovaSeq'), 'JGI', 'Cronin'))
+
+mag_metadata_df_ori <- read_tsv(mag_metadata_f, col_types = cols()) %>% rename(mag_name=MAG) 
+
+mag_metadata_df <- mag_metadata_df_ori %>%
+    filter(stringr::str_detect(SampleID__, 'MainAutochamber')) %>%
+    filter(folder %in% c('JGI', 'Cronin_v1', 'Cronin_v2')) %>%
+    mutate(seq_model_simple = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
+    left_join(sample_metadata_df, by = c('SampleID__', 'seq_model_simple')) %>%
+    left_join(
+        mag_derep_clusters_checkm2 %>% select(mag_name=genome, mag_cluster=representative)
+    ) %>%
+    group_by(Sample, mag_cluster) %>%
+    arrange(desc(Completeness)) %>%
+    filter(row_number() == 1) %>%
+    ungroup() %>%
+    filter(!is.na(Sample))
+
+mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
+
+
 ### re-process contig tracking, by jiarong
 df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
-  select(contig, genome_contig) %>%
-  group_by(genome_contig) %>%
-  filter(row_number()==1) %>% # make sure each MAG contig (genome_contig) has at most 1 match
-  ungroup()
+  select(contig, genome_contig, MAG) %>%
+  distinct() %>%
+  inner_join(
+    recombinase_contig_info %>%
+      select(contig, Sample) %>%
+      distinct()
+    ) %>%
+  inner_join(mag2sample_df) %>%
+  select(contig, genome_contig, Sample, mag_sample) %>%
+  filter(Sample == mag_sample) %>%
+  select(contig, genome_contig, Sample)
+
+n_contig_binned <- df_contig_tracking_filt %>% nrow
 
 mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
   inner_join(df_contig_tracking_filt)
+
+n_rec_binned <- mge_to_mags_checkm2_filt %>% nrow
+# total recombinase encoding contigs >= 3kbp
+n_contig_total <- recombinase_contig_info %>% 
+    filter(contig_length>=3000) %>% 
+    select(contig, contig_length) %>% 
+    distinct() %>% nrow
+# some stats
+cat('[INFO] # of contigs >=3kb binned: ', n_contig_binned, '\n')
+cat('[INFO] # of recombinase binned: ', n_rec_binned, '\n')
+cat('[INFO] # of contits >=3kb: ', n_contig_total, '\n')
+cat('[INFO] % of contigs >=3kb binned: ', scales::percent(n_contig_binned/n_contig_total, accuracy = .1), '\n')
 
 # contigs with CheckM2 MAG taxonomy
 mag_contigs <- mge_to_mags_checkm2_filt %>%
@@ -167,13 +215,12 @@ mag_contigs <- mge_to_mags_checkm2_filt %>%
   filter(!is.na(recombinase)) %>%
   left_join(clusters) %>%
   rename(origin2 = type) %>%
-  #distinct(contig, origin2, phylum, AAI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line; counting total rec not unique here
+  #distinct(contig, origin2, phylum, ANI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line
   left_join(
     recombinase_contig_info %>%
       select(contig, contig_length) %>%
       distinct()
-    ) %>%
-  inner_join(filtered_contigs)
+    )
 
 type_proportions <- mag_contigs %>%
   group_by(phylum, origin2) %>%
@@ -181,13 +228,14 @@ type_proportions <- mag_contigs %>%
   mutate(prop = n / sum(n)) %>%
   mutate(n_total = sum(n), prop_total =  sum(prop))
 
-phylum_species_counts <- mag_derep_clusters_checkm2 %>%
-  left_join(taxonomy_checkm2, by = c("representative" = "genome")) %>%
-  group_by(phylum) %>%
-  summarise(
-    n_species = unique(representative) %>% length(),
-    n_genomes = n()
+phylum_species_counts <- mag_metadata_df %>%
+    separate(Classification, sep =';', into = c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species')) %>%
+    group_by(phylum) %>%
+    summarise(
+        n_species = unique(mag_cluster) %>% length(),
+        n_genomes = n()
     )
+
 
 mag_mge_plot_data <- type_proportions %>%
   left_join(phylum_species_counts) %>%
@@ -220,7 +268,7 @@ mag_mge_plot <-
   geom_text(aes(y = n_total, label = per_genome_total %>% round(0)), size=9/.pt, hjust = 1.2, data = . %>% select(phylum, n_total, per_genome_total) %>% distinct()) +
   coord_flip() +
   scale_fill_manual("", breaks = mge_levels, values = mge_colours) +
-  scale_y_reverse(labels = c('0', '100K', '200K', '300K', '400K'), breaks = c(0, 1e+5, 2e+5, 3e+5, 4e+5), limits = c(0, 3.1e+5) %>% rev) +
+  scale_y_reverse(labels = c('0', '20K', '40K', '60K'), breaks = c(0, 2e+4, 4e+4, 6e+4), limits = c(0, 6e+4) %>% rev) +
   scale_x_discrete(position = 'top') +
   guides(fill=guide_legend(nrow = 2, byrow = T)) +
   theme_classic() +
@@ -272,7 +320,7 @@ plot_alpha_diversity <- function(df, fileprefix, counting = contig, gcounting = 
     scale_fill_distiller("MGE recombinase \nper genome", palette = "YlGn", direction = 1) +
     #scale_fill_distiller('', palette = "YlGn", direction = 1) +
     #guides(fill = guide_legend(title.position = 'bottom')) +
-    guides(x=guide_axis(angle=45), fill=guide_colorbar(title.position = 'top'))
+    guides(x=guide_axis(angle=45), fill=guide_colorbar(title.position = 'top', frame.colour = 'black', ticks.colour = 'black'))
 
   max_richness = alpha_diversity %>% pull(richness_per_species) %>% max() %>% round(0)
   second_richness = alpha_diversity %>% arrange(desc(richness_per_species)) %>% slice(2) %>% pull(richness_per_species)
@@ -292,6 +340,7 @@ alpha_per_genomes_plot <- mag_contigs %>%
       legend.justification = "centre",
       axis.title.y = element_blank(),
       axis.text.y = element_blank(),
+      legend.key.height = unit(10, 'pt')
       )
 
 
@@ -312,14 +361,16 @@ genomes_comp_plot <- mag_contigs %>%
   geom_point() +
   ggrepel::geom_text_repel(size = 9/.pt, data = . %>% filter(phylum != "Other"), force = 3, force_pull = 0.5, min.segment.length = 0.2) +
   scale_color_manual(values = phyla_colours_lines, breaks = phyla_levels, guide = "none") +
-  scale_x_continuous(labels = scales::unit_format(unit='K', scale = 1e-3)) +
-  scale_y_continuous(labels = scales::unit_format(unit='K', scale = 1e-3)) +
+  #scale_x_continuous(labels = scales::unit_format(unit='K', scale = 1e-3)) +
+  #scale_y_continuous(labels = scales::unit_format(unit='K', scale = 1e-3)) +
+  scale_x_continuous(labels = c('0', '0.5K', '1K', '1.5K'), breaks = c(0, 0.5e+3, 1e+3, 1.5e+3), limits = c(0, 1.8e+3)) +
+  scale_y_continuous(labels = c('0', '20K', '40K', '60K'), breaks = c(0, 2e+4, 4e+4, 6e+4), limits = c(0, 6e+4)) +
   xlab("Genome number") +
   ylab("MGE recombinase number") +
   theme_classic()
 
 
-p <- mag_mge_plot + alpha_per_genomes_plot + genomes_comp_plot + plot_layout(widths = c(3.8, 1.6, 2)) + plot_annotation(tag_levels = 'A')
+p <- mag_mge_plot + alpha_per_genomes_plot + genomes_comp_plot + plot_layout(widths = c(3.4, 1.8, 2)) + plot_annotation(tag_levels = 'A')
 figdir <- here('fig.outdir')
 dir.create(figdir)
 figfile <- here(figdir, 'fig.2.host_lineage.pdf')

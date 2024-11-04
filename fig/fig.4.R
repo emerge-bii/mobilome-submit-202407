@@ -117,7 +117,7 @@ fig6a <- wrap_elements(full=fig6a)
 
 
 ##################
-# Fig.4.C
+# Fig.4.B
 ##########
 
 ###
@@ -130,7 +130,7 @@ gg <- (ggplot(data=df_rec_pivot_long %>% filter(name %in% c('norm_ratio') & (ann
        + ggpubr::stat_compare_means(label='p.signif', hide.ns=T, ref.group='Palsa', vjust=2.5)
        + guides(x = guide_axis(angle = 45))
        + theme_classic()
-       + theme(strip.background = element_rect(fill=alpha('grey50', 1)))
+       + theme(strip.background = element_rect(fill=alpha(col_purple, 0.4)))
        + labs(x='', y='Normalized active ratio')
        )
 fig6b_left <- gg
@@ -164,7 +164,7 @@ gg <- (ggplot(data=df_rec_pivot_long %>% dplyr::filter(name=='norm_ratio' & ko %
        #+ ggpubr::stat_compare_means(label='p.signif', hide.ns=T, ref.group='Palsa', vjust = 2.5)
        + ggpubr::stat_compare_means(label='p.signif', hide.ns=T, comparisons = comparisons_lst, vjust=0.5)
        + theme_classic()
-       + theme(strip.background = element_rect(fill=alpha(mge_colours['IS_Tn'], 1)))
+       + theme(strip.background = element_rect(fill=alpha(mge_colours['IS_Tn'], 0.4)))
        + guides(x=guide_axis(angle = 45))
        + labs(x='', y=element_blank())
        )
@@ -178,7 +178,7 @@ gg <- (ggplot(data=df_rec_pivot_long %>% dplyr::filter(name=='norm_ratio' & ko %
        #+ ggpubr::stat_compare_means(mapping=aes(group=Habitat), label='p.signif', hide.ns=F) 
        + ggpubr::stat_compare_means(label='p.signif', hide.ns=T, ref.group='Palsa', vjust = 0.5)
        + theme_classic()
-       + theme(strip.background = element_rect(fill=alpha(mge_colours['Phage'], 1)))
+       + theme(strip.background = element_rect(fill=alpha(mge_colours['Phage'], 0.4)))
        + guides(x=guide_axis(angle = 45))
        + labs(x='', y=element_blank())
        )
@@ -189,27 +189,36 @@ fig6b <- wrap_elements(full=fig6b)
 
 
 ###################
-# Fig.4.B
+# Fig.4.C
 #############
 
+
+### PR include all RP gene shared between bac and arc
 gene_tab_vec <- c('contig_taxa/rp/all_info.all_gene.fix_domain.tsv')
 active_gene_list_f <- 'metat/add-hiseq-shared/all.sample.cov_0d9.active.list'
 rec_tab_f <- '../mge_recombinase.tsv'
 sanity_check_tab <- '../sample.metat.qc.tsv'
 non_rp_gene_vec <- c('IS_Tn', 'Phage')
 rp_gene_lst_f <- 'contig_taxa/rp/rp.ko.bac_arc_shared.list'
+
 rp_gene_vec <- readLines(rp_gene_lst_f)
 select_gene_vec <- c(non_rp_gene_vec, rp_gene_vec)
 df_sanity_check <- read_tsv(file=sanity_check_tab, col_types = cols()) %>%
-    dplyr::filter(read_forward_mapped >=0.8 | read_reverse_mapped >=0.8)
+    #dplyr::filter(read_forward_mapped >=0.8 | read_reverse_mapped >=0.8)
+    dplyr::filter(read_reverse_mapped >=0.8)
+
 df_gene_lst <- lapply(gene_tab_vec, read_tsv, col_types = cols())
+
 df <- do.call(rbind, df_gene_lst) %>%
     dplyr::mutate(gene_name=if_else(gene_name=='RP', ko, gene_name)) %>% # replace RP gene_name w/ ko
     dplyr::select(-ko)
+
 df_rec <- read_tsv(rec_tab_f, col_types = cols()) %>% 
     dplyr::select(all_of(c('recombinase','Sample','contig','contig_length','domain','phylum','class','order','family','genus','species','Year','Habitat','DepthAvg','origin2'))) %>%
     dplyr::rename(gene=recombinase, gene_name=origin2)
+
 df <- rbind(df, df_rec) %>%
+    dplyr::filter(!is.na(DepthAvg)) %>%
     dplyr::mutate(DepthLumping =  ifelse(DepthAvg >= 0 & DepthAvg < 10, "0-9", 
                            ifelse(DepthAvg >= 10 & DepthAvg < 20, "10-19", 
                            ifelse(DepthAvg >= 20 & DepthAvg < 30, "20-29",
@@ -218,7 +227,9 @@ df <- rbind(df, df_rec) %>%
                            ifelse(DepthAvg >= 50 & DepthAvg < 60, "50-59",
                            ifelse(DepthAvg >= 60 & DepthAvg < 70, "60-69",
                            ifelse(DepthAvg >= 70 & DepthAvg < 80, "70-79",
-                           NA)))))))))
+                           "80+")))))))))
+
+
 
 active_gene_list <- readLines(active_gene_list_f)
 df <- df %>% dplyr::filter(contig_length>=3000) %>%
@@ -230,54 +241,13 @@ df <- df %>% dplyr::filter(contig_length>=3000) %>%
     dplyr::filter(gene_name %in% select_gene_vec) %>%
     dplyr::mutate(active=if_else(gene %in% active_gene_list, 1, 0))
 
+
 gene_vec <- df %>% dplyr::pull(gene_name) %>% unique()
 
-### by domain
+##################
+### by phylum; sep MGE type
+
 df_by_taxa <- df %>% 
-    dplyr::group_by(gene_name, domain) %>%
-    dplyr::summarise(total_cnt=n(), active_cnt=sum(active)) %>%
-    dplyr::ungroup() %>%
-    dplyr::mutate(gene_name=if_else(gene_name %in% rp_gene_vec, 'RP', gene_name)) %>%
-    dplyr::group_by(gene_name, domain) %>% # only summarise for RP here
-    dplyr::summarise(total_cnt=mean(total_cnt), active_cnt=mean(active_cnt)) %>% # take average for all RP genes
-    dplyr::mutate(gene_name=factor(gene_name, levels = c(non_rp_gene_vec, 'RP'))) %>%
-    dplyr::mutate(active_ratio=if_else(total_cnt==0, 0, active_cnt/total_cnt)) %>%
-    dplyr::ungroup()
-df_taxa_base_ratio <- df_by_taxa %>% 
-    filter(gene_name == 'RP') %>%
-    filter(active_cnt >= 0 & total_cnt >= 5) %>%
-    select(domain, base_active_ratio=active_ratio)
-df_by_taxa <- df_by_taxa %>%
-    #filter(gene_name != 'RP') %>%
-    inner_join(df_taxa_base_ratio, by = c('domain')) %>%
-    mutate(active_ratio_norm = active_ratio/base_active_ratio)
-
-### fig6.metat.E
-gg5 <- (ggplot(data=df_by_taxa %>% filter(gene_name != 'RP'), aes(x=gene_name, y=active_ratio_norm, fill=domain)) + geom_col(position = 'dodge') 
-        +theme_classic()
-        +labs(x='', y='Normalized active ratio')
-        + ggsci::scale_fill_nejm()
-        #+ scale_x_discrete(limits=c('IS_Tn', 'Phage'))
-        #+ scale_y_continuous(breaks = c(0.25, 0.5, 0.75, 1))
-        #+theme(legend.title=element_blank(), axis.text.x=element_blank())
-        + theme(legend.title=element_blank(), legend.position = 'none', axis.text.x=element_text(angle = 45, hjust=1, vjust=1))
-        )
-
-gg6 <- (ggplot(data=df_by_taxa, aes(x=gene_name, y=active_ratio, fill=domain)) + geom_col(position = 'dodge') 
-        +theme_classic()
-        +labs(x='', y='normalized_active_ratio')
-        + ggsci::scale_fill_nejm()
-        + guides(fill='none')
-        #+ scale_y_continuous(breaks = c(0.25, 0.5, 0.75, 1))
-        #+theme(legend.title=element_blank(), axis.text.x=element_blank())
-        + theme(legend.title=element_blank(), axis.text.x=element_text(angle = 45, hjust=1, vjust=1))
-        )
-fig6d <- gg5
-
-
-### by phylum; all MGE type combined
-df_by_taxa <- df %>% 
-    dplyr::mutate(gene_name=if_else(gene_name %in% c('CE', 'Integron', 'IS_Tn', 'Phage'), 'MGE_recombinase', gene_name)) %>%
     dplyr::group_by(gene_name, domain, phylum) %>%
     dplyr::summarise(total_cnt=n(), active_cnt=sum(active)) %>%
     #dplyr::filter(domain=='Archaea') %>%
@@ -285,73 +255,58 @@ df_by_taxa <- df %>%
     dplyr::mutate(gene_name=if_else(gene_name %in% rp_gene_vec, 'RP', gene_name)) %>%
     dplyr::group_by(gene_name, domain, phylum) %>% # only summarise for RP here
     dplyr::summarise(total_cnt=mean(total_cnt), active_cnt=mean(active_cnt)) %>% # take average for all RP genes
-    dplyr::mutate(gene_name=factor(gene_name, levels = c('MGE_recombinase', 'RP'))) %>%
+    dplyr::mutate(gene_name=factor(gene_name, levels = c(non_rp_gene_vec, 'RP'))) %>%
     dplyr::mutate(active_ratio=if_else(total_cnt==0, 0, active_cnt/total_cnt)) %>%
     dplyr::ungroup()
 
 
-###
-# fig6d
-# pick active_ratio or normalized active ratio or active_cnt
-###
-
-# all MGE type combined
-gg <- (ggplot(data=df_by_taxa %>% filter(gene_name %in% c('MGE_recombinase')) %>% filter(active_cnt >=5) %>% arrange(desc(active_cnt)),
-              aes(x=factor(phylum, levels=phylum), y=active_cnt, fill=domain)) + geom_col() 
-       #+ facet_wrap(~gene_name, ncol = 1)
-        +theme_classic()
-        +labs(x='', y='MGE recombinases\nactive')
-        + ggsci::scale_fill_nejm()
-        #+ scale_y_continuous(breaks = c(0.25, 0.5, 0.75, 1))
-        #+theme(legend.title=element_blank(), axis.text.x=element_blank())
-        + theme(legend.position='top', legend.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0), 
-                legend.title = element_blank(), axis.text.x=element_text(angle = 45, hjust=1, vjust=1))
-        )
-# legend_grob <- cowplot::get_legend(gg)
-# gg <- (gg & theme(legend.position='none')) + inset_element(legend_grob, 0.5, 0.7, 1, 1, align_to = 'panel')
-### choosing active_cnt
-fig6c <- gg
-
-gg <- (ggplot(data=df_by_taxa %>% filter(gene_name %in% c('MGE_recombinase')) %>% filter(total_cnt >=5 & active_cnt >=2) %>% arrange(desc(active_ratio)),
-              aes(x=factor(phylum, levels=phylum), y=active_ratio, fill=domain)) + geom_col() 
-       #+ facet_wrap(~gene_name, ncol = 1)
-        +theme_classic()
-        +labs(x='')
-        + ggsci::scale_fill_nejm()
-        #+ scale_y_continuous(breaks = c(0.25, 0.5, 0.75, 1))
-        #+theme(legend.title=element_blank(), axis.text.x=element_blank())
-        + theme(legend.position='none', axis.text.x=element_text(angle = 45, hjust=1, vjust=1))
-        )
-### choosing actve_ratio over normalized
-#fig6d <- gg
-
-#### normalized ratio need RP
 # fitlter small active_cnt and total_cnt based on RP, rare (active) members
+
 df_taxa_base_ratio <- df_by_taxa %>% 
     filter(gene_name == 'RP') %>%
-    filter(active_cnt >= 2 & total_cnt >= 5) %>%
+    filter(active_cnt >= 5 & total_cnt >= 5) %>%
     select(domain, phylum, base_active_ratio=active_ratio)
+
+
 df_by_taxa <- df_by_taxa %>%
     #filter(gene_name != 'RP') %>%
-    #filter(active_cnt >= 5 & total_cnt >=5) %>%
+    filter(active_cnt >= 5 & total_cnt >=5) %>%
     inner_join(df_taxa_base_ratio, by = c('domain', 'phylum')) %>%
     mutate(active_ratio_norm = active_ratio/base_active_ratio)
-gg <- (ggplot(data=df_by_taxa %>% filter(gene_name %in% c('MGE_recombinase')) %>% arrange(desc(active_ratio_norm)),
-              aes(x=factor(phylum, levels=phylum), y=active_ratio_norm, fill=domain)) + geom_col() 
+
+
+phylum_level_fig6b <- df_by_taxa %>%
+    group_by(phylum) %>%
+    summarise(active_ratio_norm = mean(active_ratio_norm)) %>%
+    arrange(desc(active_ratio_norm)) %>%
+    pull(phylum)
+
+df_by_taxa <- df_by_taxa %>%
+    mutate(phylum = factor(phylum, levels = phylum_level_fig6b))
+
+phylum_level_fig6b <- df_by_taxa %>%
+    group_by(phylum) %>%
+    filter(gene_name %in% c('CE', 'Integron', 'IS_Tn', 'Phage')) %>%
+    summarise(active_ratio_norm = sum(active_ratio_norm)) %>%
+    arrange(desc(active_ratio_norm)) %>%
+    pull(phylum)
+
+df_by_taxa <- df_by_taxa %>%
+    mutate(phylum = factor(phylum, levels = phylum_level_fig6b))
+
+gg <- (ggplot(data=df_by_taxa %>% filter(gene_name %in% c('CE', 'Integron', 'IS_Tn', 'Phage')), aes(x=phylum, y=active_ratio_norm, fill=domain)) + geom_col() 
+       + facet_wrap(~gene_name, ncol=1, scales='free_y')
         +theme_classic()
-        +labs(x='')
+        +labs(x='', y='Normalized active ratio')
         + ggsci::scale_fill_nejm()
         #+ scale_y_continuous(breaks = c(0.25, 0.5, 0.75, 1))
         #+theme(legend.title=element_blank(), axis.text.x=element_blank())
-        + theme(legend.position='none', axis.text.x=element_text(angle = 45, hjust=1, vjust=1))
+        + theme(legend.title=element_blank(), axis.text.x=element_text(angle=45, hjust=1, vjust=1))
+       #+ theme(strip.background = element_rect(fill=alpha(col_purple, 1)))
         )
 
-layout <- '
-C#
-AB
-'
-fig6cd <- fig6c + fig6d + guide_area() + plot_layout(design = layout, widths = c(3,1), heights = c(0.1, 1), guides='collect')
-fig6cd <- wrap_elements(full=fig6cd)
+fig6c <- gg
+fig6c <- wrap_elements(full=fig6c)
 
 
 #########
@@ -593,8 +548,8 @@ AB
 AC
 DD
 '
-fig6_add_extra <- fig6a + fig6cd + fig6b + fig6_extra + 
-    plot_layout(widths = c(2.5,4), heights = c(1.2,1.2,1), design=layout, guides = 'collect') + 
+fig6_add_extra <- fig6a + fig6b + fig6c + fig6_extra + 
+    plot_layout(widths = c(2.5,4), heights = c(1.1,1.3,1), design=layout, guides = 'collect') + 
     plot_annotation(tag_levels = 'A')
 p <- fig6_add_extra
 

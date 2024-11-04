@@ -374,11 +374,11 @@ fig.s6b <- gg
 
 options(repr.plot.width=7.2, repr.plot.height=8.8, repr.plot.res=300)
 layout <- '
-ABC
+AB#
 DDD'
 
-p <- fig.s6b + (fig.a & scale_y_percent(accuracy = 0.1)) + (fig.b & scale_y_percent(accuracy = 0.1) & labs(x='', y="Active OTUs (%)")) + (fig.c & scale_y_percent(accuracy = 0.1)) + 
-    plot_layout(design = layout, widths = c(3, 2, 1)) + plot_annotation(tag_levels = 'A')
+p <- (fig.a & scale_y_percent(accuracy = 0.1)) + (fig.b & scale_y_percent(accuracy = 0.1) & labs(x='', y="Active OTUs (%)")) + (fig.c & scale_y_percent(accuracy = 0.1)) + 
+    plot_layout(design = layout, widths = c(2, 1, 1)) + plot_annotation(tag_levels = 'A')
 
 figdir <- here::here('fig.outdir')
 dir.create(figdir)

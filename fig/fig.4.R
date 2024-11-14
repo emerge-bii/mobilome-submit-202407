@@ -24,7 +24,7 @@ df <- read_tsv(file=allinfo_tab, col_types = cols()) %>%
                            ifelse(DepthAvg >= 50 & DepthAvg < 60, "50-59",
                            ifelse(DepthAvg >= 60 & DepthAvg < 70, "60-69",
                            ifelse(DepthAvg >= 70 & DepthAvg < 80, "70-79",
-                           NA)))))))))
+                           "80+")))))))))
 df_sanity_check <- read_tsv(file=sanity_check_tab, col_types = cols()) %>%
     #dplyr::filter(read_forward_mapped >=0.8 | read_reverse_mapped >=0.8)
     dplyr::filter(read_reverse_mapped >=0.8)
@@ -321,7 +321,6 @@ fig6c <- wrap_elements(full=fig6c)
 ###
 
 pw_iden_f <- '../genomic_neighborhood.pairwise_ani.tsv'
-clust_f <- '../mge_recombinase.clustering.100aai.tsv'
 rec_allinfo_f <- '../mge_recombinase.tsv'
 mge_levels <- c("IS_Tn", "Phage", "CE", "Integron", "ambiguous")
 mge_colours <- ggsci::pal_npg()(4) %>% c('grey50')
@@ -331,14 +330,13 @@ stable <- 'stable'     # vertical transfer
 unstable <- 'unstable' # horizontal
 df_pw <- read.table(pw_iden_f, sep='\t', header=T)
 colnames(df_pw) <- c('seqname1', 'seqname2', 'low_ani', 'high_ani', 'OTU')
-df_clust <- read_tsv(clust_f, col_types = cols())
 df_rec <- read_tsv(rec_allinfo_f, col_types=cols())
-df_info <- df_clust %>%
-    dplyr::inner_join(df_rec, by=c('mem' = 'recombinase'))
-df_info <- df_info %>%
+df_info <- df_rec %>%
+    dplyr::rename(mem=recombinase) %>%
+    dplyr::filter(!is.na(OTU)) %>%
     dplyr::select(all_of(c('mem', 'domain', 'phylum', 'Year', 'Habitat', 'DepthAvg', 'origin'))) %>%
     dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
-    mutate(DepthLumping =  ifelse(DepthAvg >= 0 & DepthAvg < 10, "0-9", 
+    dplyr::mutate(DepthLumping =  ifelse(DepthAvg >= 0 & DepthAvg < 10, "0-9", 
                            ifelse(DepthAvg >= 10 & DepthAvg < 20, "10-19", 
                            ifelse(DepthAvg >= 20 & DepthAvg < 30, "20-29",
                            ifelse(DepthAvg >= 30 & DepthAvg < 40, "30-39",
@@ -346,7 +344,7 @@ df_info <- df_info %>%
                            ifelse(DepthAvg >= 50 & DepthAvg < 60, "50-59",
                            ifelse(DepthAvg >= 60 & DepthAvg < 70, "60-69",
                            ifelse(DepthAvg >= 70 & DepthAvg < 80, "70-79",
-                           NA)))))))))
+                           "80+")))))))))
 
 # remove non-MGE recombinases
 df_pw <- df_pw %>% dplyr::filter(seqname1 %in% df_info$mem & seqname2 %in% df_info$mem)
@@ -466,7 +464,6 @@ fig8a <- gg
 #################
 ### metaT on recomibnase OTU stability or activity
 ### cov_0d9
-tab_f <- '../mge_recombinase.clustering.100aai.tsv'
 rec_tab_f <- '../mge_recombinase.tsv'
 active_gene_list_f <- 'metat/add-hiseq-shared/all.sample.cov_0d9.active.list'
 sanity_check_tab <- '../sample.metat.qc.tsv'
@@ -477,14 +474,12 @@ names(mge_colours) <- mge_levels
 stable <- 'N'
 unstable <- 'Y'
 df_sanity_check <- read_tsv(file=sanity_check_tab, col_types = cols()) %>%
-    dplyr::filter(read_forward_mapped >=0.8 | read_reverse_mapped >=0.8)
+    dplyr::filter(read_reverse_mapped >=0.8)
 sample_vec <- df_sanity_check$Sample
 
-df <- read_tsv(tab_f, col_types = cols()) %>%
-    dplyr::left_join(
-        read_tsv(rec_tab_f, col_types=cols()),
-	by = c('mem' = 'recombinase')
-    ) %>%
+df <- read_tsv(rec_tab_f, col_types=cols()) %>%
+    dplyr::rename(mem = recombinase) %>%
+    dplyr::filter(!is.na(OTU)) %>%
     dplyr::filter(Sample %in% sample_vec)
 active_gene_vec <- readLines(active_gene_list_f)
 active_rec_vec <- intersect(active_gene_vec, df$mem)
@@ -503,7 +498,7 @@ df <- df %>%
                            ifelse(DepthAvg >= 50 & DepthAvg < 60, "50-59",
                            ifelse(DepthAvg >= 60 & DepthAvg < 70, "60-69",
                            ifelse(DepthAvg >= 70 & DepthAvg < 80, "70-79",
-                           "80-89")))))))))
+                           "80+")))))))))
 
 df_all <- df %>% 
     dplyr::group_by(OTU, origin) %>%

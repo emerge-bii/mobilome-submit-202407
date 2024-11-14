@@ -6,7 +6,6 @@ source(here::here('setup.R'))
 allinfo_tab <- '../metat.gene_cnt.tsv'
 rp_gene_lst_f <- 'som-data/fig-data/contig_taxa/rp/rp.ko.bac_arc_shared.list'
 rec_f <- 'som-data/mge_recombinase.tsv'
-clust_f <- 'som-data/mge_recombinase.clustering.100aai.tsv'
 active_gene_list_f <- 'som-data/fig-data/metat/add-hiseq-shared/all.sample.cov_0d9.active.list'
 sanity_check_tab <- 'som-data/sample.metat.qc.tsv'
 
@@ -20,9 +19,9 @@ df_sanity_check <- read_tsv(file=sanity_check_tab, col_types = cols()) %>%
 sample_vec <- df_sanity_check$Sample
 df_rec <- read_tsv(rec_f, col_types = cols())
 
-df <- read_tsv(clust_f, col_types=cols()) %>%
-    dplyr::inner_join(df_rec, c('mem'='recombinase')) %>%
-    dplyr::filter(Sample %in% sample_vec)
+df <- df_rec %>%
+    dplyr::rename(mem = recombinase) %>%
+    dplyr::filter(Sample %in% sample_vec & !is.na(OTU))
 
 active_gene_vec <- readLines(active_gene_list_f)
 active_rec_vec <- intersect(active_gene_vec, df$mem)

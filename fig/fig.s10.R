@@ -6,23 +6,20 @@ source(here::here('setup.R'))
 ###
 
 pw_iden_f <- 'som-data/genomic_neighborhood.pairwise_ani.tsv'
-clust_f <- 'som-data/mge_recombinase.clustering.100aai.tsv'
 rec_allinfo_f <- 'som-data/mge_recombinase.tsv'
 
 # variable for neighborhood types
 stable <- 'stable'     # vertical transfer
 unstable <- 'unstable' # horizontal
 
-df_pw <- read.table(pw_iden_f, sep='\t', header=T)
+df_pw <- read_tsv(pw_iden_f, col_types = cols())
 colnames(df_pw) <- c('seqname1', 'seqname2', 'low_ani', 'high_ani', 'OTU')
 
-df_clust <- read_tsv(clust_f, col_types = cols())
 df_rec <- read_tsv(rec_allinfo_f, col_types=cols())
 
-df_info <- df_clust %>%
-    dplyr::inner_join(df_rec, by=c('mem' = 'recombinase'))
-
-df_info <- df_info %>%
+df_info <- df_rec %>%
+    dplyr::rename(mem = recombinase) %>%
+    dplyr::filter(Habitat %in% c('Palsa', 'Bog', 'Fen') & !is.na(OTU)) %>%
     dplyr::select(all_of(c('mem', 'domain', 'phylum', 'Year', 'Habitat', 'DepthAvg', 'origin'))) %>%
     dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(DepthAvg)) %>%
@@ -307,7 +304,6 @@ fig7d <- gg
 ###
 
 pw_iden_f <- 'som-data/fig-data/stability/nh_600bp/all.gene_neighbor.blastn.pw_iden_within_cluster.sep_ends_sum.tsv'
-clust_f <- 'som-data/mge_recombinase.clustering.100aai.tsv'
 rec_allinfo_f <- 'som-data/mge_recombinase.tsv'
 
 # variable for neighborhood types
@@ -317,15 +313,11 @@ unstable <- 'unstable' # horizontal
 df_pw <- read.table(pw_iden_f, sep='\t', header=T)
 colnames(df_pw) <- c('seqname1', 'seqname2', 'low_ani', 'high_ani', 'OTU')
 
-
-df_clust <- read_tsv(clust_f, col_types = cols())
 df_rec <- read_tsv(rec_allinfo_f, col_types=cols())
 
-
-df_info <- df_clust %>%
-    dplyr::inner_join(df_rec, by=c('mem' = 'recombinase'))
-
-df_info <- df_info %>%
+df_info <- df_rec %>%
+    dplyr::rename(mem = recombinase) %>%
+    dplyr::filter(Habitat %in% c("Palsa", "Bog", "Fen") & !is.na(OTU)) %>%
     dplyr::select(all_of(c('mem', 'domain', 'phylum', 'Year', 'Habitat', 'DepthAvg', 'origin'))) %>%
     dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(DepthAvg)) %>%
@@ -408,9 +400,7 @@ df_600 <- df_all_summary %>% mutate(cutoff=600)
 ###
 
 pw_iden_f <- 'som-data/fig-data/stability/nh_1kbp/all.gene_neighbor.blastn.pw_iden_within_cluster.sep_ends_sum.tsv'
-clust_f <- 'som-data/mge_recombinase.clustering.100aai.tsv'
 rec_allinfo_f <- 'som-data/mge_recombinase.tsv'
-
 
 # variable for neighborhood types
 stable <- 'stable'     # vertical transfer
@@ -419,13 +409,11 @@ unstable <- 'unstable' # horizontal
 df_pw <- read.table(pw_iden_f, sep='\t', header=T)
 colnames(df_pw) <- c('seqname1', 'seqname2', 'low_ani', 'high_ani', 'OTU')
 
-df_clust <- read_tsv(clust_f, col_types = cols())
 df_rec <- read_tsv(rec_allinfo_f, col_types=cols())
 
-df_info <- df_clust %>%
-    dplyr::inner_join(df_rec, by=c('mem' = 'recombinase'))
-
-df_info <- df_info %>%
+df_info <- df_rec %>%
+    dplyr::rename(mem = recombinase) %>%
+    dplyr::filter(Habitat %in% c("Palsa", "Bog", "Fen") & !is.na(OTU)) %>%
     dplyr::select(all_of(c('mem', 'domain', 'phylum', 'Year', 'Habitat', 'DepthAvg', 'origin'))) %>%
     dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(DepthAvg)) %>%
@@ -438,7 +426,6 @@ df_info <- df_info %>%
                            ifelse(DepthAvg >= 60 & DepthAvg < 70, "60-69",
                            ifelse(DepthAvg >= 70 & DepthAvg < 80, "70-79",
                            "80+")))))))))
-
 
 df_pw <- df_pw %>% dplyr::filter(seqname1 %in% df_info$mem & seqname2 %in% df_info$mem)
 

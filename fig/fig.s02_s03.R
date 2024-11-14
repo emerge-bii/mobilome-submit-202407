@@ -1,11 +1,9 @@
 source(here::here('setup.R'))
 
 tab_f <- 'som-data/mge_recombinase.tsv'
-rec_clust_f <- 'som-data/mge_recombinase.clustering.100aai.tsv'
 contig_min_len <- 3000
 
 df <- read_tsv(tab_f, col_types = cols()) %>% mutate(group = rec_subfamily, type = rec_family)
-df_rec_clust <- read_tsv(rec_clust_f, col_types=cols())
 
 
 ###
@@ -34,10 +32,8 @@ names(pal) <- select_vec
 ### Add distribution of all identified recombinase w/o any length or habitat filtering
 
 df1_uniq <- df %>% 
-    dplyr::filter(!is.na(Habitat)) %>%
-    dplyr::left_join(df_rec_clust, by = c('recombinase'='mem')) %>%
-    dplyr::group_by(OTU, length) %>%
-    dplyr::arrange(desc(length), .by_group = T) %>%
+    dplyr::filter(Habitat %in% c('Palsa', 'Bog', 'Fen') & !is.na(OTU)) %>%
+    dplyr::group_by(OTU) %>%
     dplyr::filter(row_number() == 1) %>% #Pick top row per group
     dplyr::ungroup() %>%
     group_by(Habitat, origin2) %>% summarise(count=n()) %>%

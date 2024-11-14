@@ -155,15 +155,15 @@ mag_metadata_f <- 'som-data/mag.tsv'
 sample_metadata_f <- 'som-data/sample.metadata.tsv' # only for filed samples
 
 sample_metadata_df <- read_tsv(sample_metadata_f, col_types = cols()) %>%
-    mutate(seq_model_simple = if_else(stringr::str_detect(seq_model, 'NovaSeq'), 'JGI', 'Cronin'))
+    mutate(folder2 = if_else(folder=='JGI', 'JGI', 'Cronin'))
 
 mag_metadata_df_ori <- read_tsv(mag_metadata_f, col_types = cols()) %>% rename(mag_name=MAG) 
 
 mag_metadata_df <- mag_metadata_df_ori %>%
     filter(stringr::str_detect(SampleID__, 'MainAutochamber')) %>%
     filter(folder %in% c('JGI', 'Cronin_v1', 'Cronin_v2')) %>%
-    mutate(seq_model_simple = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
-    left_join(sample_metadata_df, by = c('SampleID__', 'seq_model_simple')) %>%
+    mutate(folder2 = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
+    left_join(sample_metadata_df, by = c('SampleID__', 'folder2')) %>%
     left_join(
         mag_derep_clusters_checkm2 %>% select(mag_name=genome, mag_cluster=representative)
     ) %>%
@@ -190,7 +190,35 @@ df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
   filter(Sample == mag_sample) %>%
   select(contig, genome_contig, Sample)
 
-n_contig_binned <- df_contig_tracking_filt %>% nrow
+#### add MAG contig match to MGE recombinase master table
+#df_contig_tracking_filt2 <- mge_to_mags_checkm2 %>%
+#  select(contig, genome_contig, MAG) %>%
+#  distinct() %>%
+#  inner_join(
+#    recombinase_contig_info %>%
+#      select(contig, Sample) %>%
+#      distinct()
+#    ) %>%
+#  inner_join(mag2sample_df) %>%
+#  select(contig, genome_contig, Sample, mag_sample, MAG) %>%
+#  filter(Sample == mag_sample) %>%
+#  select(contig, genome_contig, Sample, MAG)
+#
+#df_rec_master <- recombinase_contig_info %>%
+#  left_join(
+#    df_contig_tracking_filt2 %>%
+#      left_join(
+#        mag_metadata_df %>% select(MAG=mag_name, Completeness, Classification) 
+#      ) %>%
+#      group_by(contig) %>%
+#      arrange(desc(Completeness)) %>%
+#      filter(row_number() == 1) %>%
+#      select(contig, mag=MAG, mag_contig=genome_contig, mag_lineage=Classification)
+#  )
+#
+#df_rec_master %>% write_tsv('mge_recombinase.master.tsv')
+
+n_contig_binned <- df_contig_tracking_filt %>% pull(contig) %>% unique() %>% length()
 
 mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
   inner_join(df_contig_tracking_filt)

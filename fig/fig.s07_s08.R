@@ -252,7 +252,7 @@ df_add_scg <- df %>% dplyr::filter(contig_length>=contig_min_len & (!is.na(Habit
   left_join(df_scg, by=c('Sample', 'phylum')) %>% filter(!is.na(scg_cnt)) %>%
   dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen')), Year=as.factor(Year)) %>%
   dplyr::filter(!is.na(Habitat)) %>%
-  dplyr::filter(origin2 != 'ambiguous') %>%
+  #dplyr::filter(origin2 != 'ambiguous') %>%
   dplyr::mutate(phylum=stringr::str_replace(phylum, 'p__', '')) %>% dplyr::filter(phylum!='Other') %>%
   dplyr::filter(!is.na(DepthAvg)) %>%
   dplyr::mutate(Depth =  ifelse(DepthAvg >= 1 & DepthAvg < 9, "0-9", 
@@ -299,11 +299,15 @@ gg <- (ggplot(df_add_scg7, aes(x=phylum, y=mge_per_cell, fill=phylum))
 )
 
 
-gg <- (ggplot(df_add_scg7, aes(x=phylum, y=mge_per_cell, fill=phylum))
+###
+# fig.S7.D
+###
+
+gg <- (ggplot(df_add_scg7 %>% filter(origin2 != 'ambiguous'), aes(x=phylum, y=mge_per_cell, fill=phylum))
        #+ geom_boxplot(position = position_dodge(preserve = 'single'))
        + geom_col()
-       + geom_hline(data=df_add_scg8, mapping=aes(yintercept=mge_per_cell), color='red', linetype='dashed')
-       + geom_hline(data=. %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept = mge_per_cell_mean_aross_phylum), color='blue', linetype='dashed')
+       + geom_hline(data=df_add_scg8 %>% filter(origin2 != 'ambiguous'), mapping=aes(yintercept=mge_per_cell), color='red', linetype='dashed')
+       + geom_hline(data=. %>% filter(origin2 != 'ambiguous') %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept = mge_per_cell_mean_aross_phylum), color='blue', linetype='dashed')
        + scale_fill_manual(values=phyla_colours_lines, breaks = phyla_levels, guide='none')
        #+ theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1))
        #+ facet_wrap(~origin2, nrow=1, scales='free_x')
@@ -360,7 +364,8 @@ mag_mge_plot_data <- df_add_scg7 %>%
     ) %>%
     group_by(phylum) %>%
     mutate(n_total = sum(mge_cnt), per_genome_total = sum(mge_per_cell), n=mge_cnt, per_genome=mge_per_cell, n_genomes = scg_cnt, n_genomes_total=sum(scg_cnt)) %>%
-    filter(phylum != 'Other')
+    filter(phylum != 'Other') %>%
+    ungroup()
 
 
 ### y as absolute number
@@ -380,9 +385,9 @@ mag_mge_plot <-
   geom_text(aes(y = n_total, label = per_genome_total %>% round(0)), hjust = 1.2, data = . %>% select(phylum, n_total, per_genome_total) %>% distinct()) +
   coord_flip() +
   scale_fill_manual("", breaks = mge_levels, values = mge_colours) +
-  scale_y_reverse(labels = c('0', '100K', '200K', '300K'), breaks = c(0, 1e+5, 2e+5, 3e+5), limits = c(0, 3e+5) %>% rev) +
+  scale_y_reverse(labels = c('0', '100K', '200K', '300K', '400K'), breaks = c(0, 1e+5, 2e+5, 3e+5, 4e+5), limits = c(0, 4.1e+5) %>% rev) +
   scale_x_discrete(position = 'top') +
-  guides(fill=guide_legend(nrow = 2, byrow = T)) +
+  guides(fill=guide_legend(nrow = 3, byrow = T)) +
   theme_classic() +
   theme(legend.position = 'bottom') +
   #ylim(0, 5.5e+5) + # NOTE: this is redudant w/ scale_y_continuous(limits=limits)
@@ -406,12 +411,14 @@ tile_layers <- list(
 
 options(repr.plot.width=1.5, repr.plot.height=3.5, repr.plot.res=300)
 alpha_per_genomes_plot <- mag_mge_plot_data2 %>%
+    select(origin2, phylum, per_genome) %>%
+    complete(origin2, phylum, fill = list(per_genome=0)) %>%
     ggplot(aes(origin2, phylum, fill = per_genome)) +
     tile_layers +
     #scale_fill_distiller("MGE recombinase \nper genome", palette = "YlGn", direction = 1) +
     scale_fill_distiller('MGE recombinase\nper genome', palette = "YlGn", direction = 1) +
     #guides(fill = guide_legend(title.position = 'bottom')) +
-    guides(x=guide_axis(angle=45), fill=guide_colorbar(title.position = 'top')) +
+    guides(x=guide_axis(angle=45), fill=guide_colorbar(title.position = 'top', frame.colour = 'black', ticks.colour = 'black')) +
     theme(
       legend.position = "bottom",
       legend.justification = "centre",
@@ -465,8 +472,8 @@ genomes_comp_plot_inset <- tmp_df %>%
   geom_point() +
   ggrepel::geom_text_repel(size = 7/.pt, data = . %>% filter(phylum != "other"), force = 3, force_pull = 0.5, min.segment.length = 0.2) +
   scale_color_manual(values = phyla_colours_lines, breaks = phyla_levels, guide = "none") +
-  scale_x_continuous(labels = scales::unit_format(unit = 'K', scale = 1e-3), limits = c(0, 2200)) +
-  scale_y_continuous(labels = scales::unit_format(unit = 'K', scale = 1e-3), limits = c(0, 12000)) +
+  scale_x_continuous(labels = scales::unit_format(unit = 'K', scale = 1e-3), limits = c(0, 3000)) +
+  scale_y_continuous(labels = scales::unit_format(unit = 'K', scale = 1e-3), limits = c(0, 16000)) +
   xlab("") +
   ylab("") +
   theme_classic()
@@ -589,16 +596,63 @@ clusters <- recombinase_clustering %>%
   rename(recombinase = contig, AAI_100 = `100_AAI`, AAI_90 = `90_AAI`)
 
 
+### select only MAGs binned from contigs in samples used in this study
+### filter redudant MAGs wihtin the same sample
+mag_metadata_f <- 'som-data/mag.tsv'
+sample_metadata_f <- 'som-data/sample.metadata.tsv' # only for filed samples
+
+sample_metadata_df <- read_tsv(sample_metadata_f, col_types = cols()) %>%
+    mutate(seq_model_simple = if_else(stringr::str_detect(seq_model, 'NovaSeq'), 'JGI', 'Cronin'))
+
+mag_metadata_df_ori <- read_tsv(mag_metadata_f, col_types = cols()) %>% rename(mag_name=MAG) 
+
+mag_metadata_df <- mag_metadata_df_ori %>%
+    filter(stringr::str_detect(SampleID__, 'MainAutochamber')) %>%
+    filter(folder %in% c('JGI', 'Cronin_v1', 'Cronin_v2')) %>%
+    mutate(seq_model_simple = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
+    left_join(sample_metadata_df, by = c('SampleID__', 'seq_model_simple')) %>%
+    left_join(
+        mag_derep_clusters_checkm2 %>% select(mag_name=genome, mag_cluster=representative)
+    ) %>%
+    group_by(Sample, mag_cluster) %>%
+    arrange(desc(Completeness)) %>%
+    filter(row_number() == 1) %>%
+    ungroup() %>%
+    filter(!is.na(Sample))
+
+mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
+
+
 ### re-process contig tracking, by jiarong
 df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
-  select(contig, genome_contig) %>%
-  group_by(genome_contig) %>%
-  filter(row_number()==1) %>% # make sure each MAG contig (genome_contig) has at most 1 match
-  ungroup()
+  select(contig, genome_contig, MAG) %>%
+  distinct() %>%
+  inner_join(
+    recombinase_contig_info %>%
+      select(contig, Sample) %>%
+      distinct()
+    ) %>%
+  inner_join(mag2sample_df) %>%
+  select(contig, genome_contig, Sample, mag_sample) %>%
+  filter(Sample == mag_sample) %>%
+  select(contig, genome_contig, Sample)
 
+n_contig_binned <- df_contig_tracking_filt %>% nrow
 
 mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
   inner_join(df_contig_tracking_filt)
+
+n_rec_binned <- mge_to_mags_checkm2_filt %>% nrow
+# total recombinase encoding contigs >= 3kbp
+n_contig_total <- recombinase_contig_info %>% 
+    filter(contig_length>=3000) %>% 
+    select(contig, contig_length) %>% 
+    distinct() %>% nrow
+# some stats
+cat('[INFO] # of contigs >=3kb binned: ', n_contig_binned, '\n')
+cat('[INFO] # of recombinase binned: ', n_rec_binned, '\n')
+cat('[INFO] # of contits >=3kb: ', n_contig_total, '\n')
+cat('[INFO] % of contigs >=3kb binned: ', scales::percent(n_contig_binned/n_contig_total, accuracy = .1), '\n')
 
 # contigs with CheckM2 MAG taxonomy
 mag_contigs <- mge_to_mags_checkm2_filt %>%
@@ -608,14 +662,12 @@ mag_contigs <- mge_to_mags_checkm2_filt %>%
   filter(!is.na(recombinase)) %>%
   left_join(clusters) %>%
   rename(origin2 = type) %>%
-  #distinct(contig, origin2, phylum, AAI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line; counting total rec not unique here
+  #distinct(contig, origin2, phylum, ANI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line
   left_join(
     recombinase_contig_info %>%
       select(contig, contig_length) %>%
       distinct()
-    ) %>%
-  inner_join(filtered_contigs)
-
+    )
 
 type_proportions <- mag_contigs %>%
   group_by(phylum, origin2) %>%
@@ -623,12 +675,12 @@ type_proportions <- mag_contigs %>%
   mutate(prop = n / sum(n)) %>%
   mutate(n_total = sum(n), prop_total =  sum(prop))
 
-phylum_species_counts <- mag_derep_clusters_checkm2 %>%
-  left_join(taxonomy_checkm2, by = c("representative" = "genome")) %>%
-  group_by(phylum) %>%
-  summarise(
-    n_species = unique(representative) %>% length(),
-    n_genomes = n()
+phylum_species_counts <- mag_metadata_df %>%
+    separate(Classification, sep =';', into = c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species')) %>%
+    group_by(phylum) %>%
+    summarise(
+        n_species = unique(mag_cluster) %>% length(),
+        n_genomes = n()
     )
 
 ###
@@ -673,8 +725,8 @@ genomes_comp_plot_mag_inset <- mag_contigs %>%
   geom_point() +
   ggrepel::geom_text_repel(size = 7/.pt, data = . %>% filter(phylum != "Other"), force = 3, force_pull = 0.5, min.segment.length = 0.2) +
   scale_color_manual(values = phyla_colours_lines, breaks = phyla_levels, guide = "none") +
-  scale_x_continuous(labels = scales::unit_format(unit='K', scale = 1e-3), limits = c(0, 3000)) +
-  scale_y_continuous(labels = scales::unit_format(unit='K', scale = 1e-3), limits = c(0, 50000)) +
+  scale_x_continuous(labels = scales::unit_format(unit='K', scale = 1e-3), limits = c(0, 400)) +
+  scale_y_continuous(labels = scales::unit_format(unit='K', scale = 1e-3), limits = c(0, 5500)) +
   xlab("") +
   ylab("") +
   theme_classic()
@@ -694,13 +746,13 @@ tmp_df <- mag_contigs %>%
     ) %>%
   filter(phylum != 'Other') %>%
   mutate(mge_per_cell = n_per_origin_per_phylum / n_genomes) %>%
-  mutate(mge_per_cell_mean_across_phylum = mean(mge_per_cell)) %>%
-  filter(origin2 != 'ambiguous')
+  mutate(mge_per_cell_mean_across_phylum = mean(mge_per_cell)) #%>%
+  #filter(origin2 != 'ambiguous')
 
 tmp_df2 <- mag_contigs %>%
   group_by(origin2, phylum, MAG) %>%
-  summarise(n_per_mag = n()) %>%
-  filter(origin2 != 'ambiguous')
+  summarise(n_per_mag = n()) #%>%
+  #filter(origin2 != 'ambiguous')
 
 
 ### boxplot
@@ -720,11 +772,11 @@ gg <- (ggplot(tmp_df2, aes(x=phylum, y=n_per_mag, fill=phylum))
 )
 
 ### bar chart to be consistent with contig fig
-gg <- (ggplot(tmp_df, aes(x=phylum, y=mge_per_cell, fill=phylum))
+gg <- (ggplot(tmp_df %>% filter(origin2 != 'ambiguous'), aes(x=phylum, y=mge_per_cell, fill=phylum))
        #+ geom_boxplot(position = position_dodge(preserve = 'single'))
        + geom_col()
-       + geom_hline(data=. %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept=mge_per_cell_global), color='red', linetype='dashed')
-       + geom_hline(data=. %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept = mge_per_cell_mean_across_phylum), color='blue', linetype='dashed')
+       + geom_hline(data=. %>% filter(origin2 != 'ambiguous') %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept=mge_per_cell_global), color='red', linetype='dashed')
+       + geom_hline(data=. %>% filter(origin2 != 'ambiguous') %>% group_by(origin2) %>% filter(row_number() == 1), mapping=aes(yintercept = mge_per_cell_mean_across_phylum), color='blue', linetype='dashed')
        + scale_fill_manual(values=phyla_colours_lines, breaks = phyla_levels, guide='none')
        #+ theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1))
        #+ facet_wrap(~origin2, nrow=1, scales='free_x')
@@ -741,7 +793,7 @@ fig.s8.c <- wrap_elements(full=gg)
 ### fig.S7
 
 options(repr.plot.width=7.2, repr.plot.height=9, repr.plot.res=300)
-upper <- (mag_mge_plot & theme(legend.key.size = unit(8, 'pt'))) + (alpha_per_genomes_plot& theme(legend.key.size = unit(8, 'pt'))) + guide_area() + plot_layout(widths = c(2,1,1), guides = 'collect') + plot_annotation(tag_levels = 'A')
+upper <- (mag_mge_plot & theme(legend.key.size = unit(8, 'pt'))) + (alpha_per_genomes_plot& theme(legend.key.size = unit(10, 'pt'))) + guide_area() + plot_layout(widths = c(1.8,0.8,1.4), guides = 'collect') + plot_annotation(tag_levels = 'A')
 upper <- wrap_elements(full=upper)
 mid <- (fig.s5c & theme(legend.key.size = unit(8, 'pt')) & guides(fill=guide_legend(ncol=2)) & labs(tag='C'))
 mid <- wrap_elements(full=mid)

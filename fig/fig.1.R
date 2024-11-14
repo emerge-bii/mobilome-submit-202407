@@ -282,15 +282,15 @@ mag_metadata_f <- 'som-data/mag.tsv'
 sample_metadata_f <- 'som-data/sample.metadata.tsv' # only for filed samples
 
 sample_metadata_df <- read_tsv(sample_metadata_f, col_types = cols()) %>%
-    mutate(seq_model_simple = if_else(stringr::str_detect(seq_model, 'NovaSeq'), 'JGI', 'Cronin'))
+    mutate(folder2 = if_else(folder=='JGI', 'JGI', 'Cronin'))
 
 mag_metadata_df_ori <- read_tsv(mag_metadata_f, col_types = cols()) %>% rename(mag_name=MAG) 
 
 mag_metadata_df <- mag_metadata_df_ori %>%
     filter(stringr::str_detect(SampleID__, 'MainAutochamber')) %>%
     filter(folder %in% c('JGI', 'Cronin_v1', 'Cronin_v2')) %>%
-    mutate(seq_model_simple = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
-    left_join(sample_metadata_df, by = c('SampleID__', 'seq_model_simple')) %>%
+    mutate(folder2 = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
+    left_join(sample_metadata_df, by = c('SampleID__', 'folder2')) %>%
     left_join(
         mag_derep_clusters_checkm2 %>% select(mag_name=genome, mag_cluster=representative)
     ) %>%

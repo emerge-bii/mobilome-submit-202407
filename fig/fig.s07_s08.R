@@ -602,15 +602,15 @@ mag_metadata_f <- 'som-data/mag.tsv'
 sample_metadata_f <- 'som-data/sample.metadata.tsv' # only for filed samples
 
 sample_metadata_df <- read_tsv(sample_metadata_f, col_types = cols()) %>%
-    mutate(seq_model_simple = if_else(stringr::str_detect(seq_model, 'NovaSeq'), 'JGI', 'Cronin'))
+    mutate(folder2 = if_else(folder == 'JGI', 'JGI', 'Cronin'))
 
 mag_metadata_df_ori <- read_tsv(mag_metadata_f, col_types = cols()) %>% rename(mag_name=MAG) 
 
 mag_metadata_df <- mag_metadata_df_ori %>%
     filter(stringr::str_detect(SampleID__, 'MainAutochamber')) %>%
     filter(folder %in% c('JGI', 'Cronin_v1', 'Cronin_v2')) %>%
-    mutate(seq_model_simple = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
-    left_join(sample_metadata_df, by = c('SampleID__', 'seq_model_simple')) %>%
+    mutate(folder2 = if_else(folder %in% c('Cronin_v1', 'Cronin_v2'), 'Cronin', 'JGI')) %>%
+    left_join(sample_metadata_df, by = c('SampleID__', 'folder2')) %>%
     left_join(
         mag_derep_clusters_checkm2 %>% select(mag_name=genome, mag_cluster=representative)
     ) %>%
@@ -622,52 +622,11 @@ mag_metadata_df <- mag_metadata_df_ori %>%
 
 mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
 
-
-### re-process contig tracking, by jiarong
-df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
-  select(contig, genome_contig, MAG) %>%
-  distinct() %>%
-  inner_join(
-    recombinase_contig_info %>%
-      select(contig, Sample) %>%
-      distinct()
-    ) %>%
-  inner_join(mag2sample_df) %>%
-  select(contig, genome_contig, Sample, mag_sample) %>%
-  filter(Sample == mag_sample) %>%
-  select(contig, genome_contig, Sample)
-
-n_contig_binned <- df_contig_tracking_filt %>% nrow
-
-mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
-  inner_join(df_contig_tracking_filt)
-
-n_rec_binned <- mge_to_mags_checkm2_filt %>% nrow
-# total recombinase encoding contigs >= 3kbp
-n_contig_total <- recombinase_contig_info %>% 
-    filter(contig_length>=3000) %>% 
-    select(contig, contig_length) %>% 
-    distinct() %>% nrow
-# some stats
-cat('[INFO] # of contigs >=3kb binned: ', n_contig_binned, '\n')
-cat('[INFO] # of recombinase binned: ', n_rec_binned, '\n')
-cat('[INFO] # of contits >=3kb: ', n_contig_total, '\n')
-cat('[INFO] % of contigs >=3kb binned: ', scales::percent(n_contig_binned/n_contig_total, accuracy = .1), '\n')
-
 # contigs with CheckM2 MAG taxonomy
-mag_contigs <- mge_to_mags_checkm2_filt %>%
-  separate(taxonomy, sep = ";",
-    into = c("domain", "phylum", "class", "order", "family", "genus", "species")
-    ) %>%
-  filter(!is.na(recombinase)) %>%
-  left_join(clusters) %>%
-  rename(origin2 = type) %>%
-  #distinct(contig, origin2, phylum, ANI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line
-  left_join(
-    recombinase_contig_info %>%
-      select(contig, contig_length) %>%
-      distinct()
-    )
+mag_contigs <- recombinase_contig_info %>%
+     select(recombinase, origin2, contig, contig_length, MAG=mag, mag_lineage) %>%
+     filter(!is.na(MAG) & contig_length >= contig_length_cutoff) %>%
+     separate(mag_lineage, sep=";", into = c("domain", "phylum", "class", "order", "family", "genus", "species"))
 
 type_proportions <- mag_contigs %>%
   group_by(phylum, origin2) %>%

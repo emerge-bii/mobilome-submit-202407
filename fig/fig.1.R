@@ -177,83 +177,14 @@ df_add_scg <- df %>% dplyr::filter(contig_length>=3000 & (!is.na(Habitat))) %>%
 ###
 
 # set dirctories
-v2_mags_directory <- here("som-data", "fig-data", "emerge_mags_v2")
-recombinase_directory <- here("som-data")
-v3_contig_tracking_directory <- here("som-data", "fig-data", "contig_tracking_v3")
-recombinase_clustering_directory <- here("som-data", "fig-data", "recombinase_clustering_v1")
-
-checkm2_report_f <- here("som-data", "fig-data", "emerge_mags_v2", "checkm2_v1.0.2_quality_report.tsv")
-
-contig_length_cutoff <- 3000
-
-### load clustering files
-read_recombinase_clustering <- function() {
-    d <- tribble(
-        ~cluster, ~filename,
-        "90_AAI", "90_AAI_cluster.tsv",
-        "100_AAI", "100_AAI_cluster.tsv"
-        ) %>%
-        mutate(
-            data = map(filename, ~ here(recombinase_clustering_directory, .) %>% read_tsv(col_names = c("representative", "contig"), show_col_types = F)),
-        ) %>%
-        select(-filename)
-    return(d)
-}
-recombinase_clustering <- read_recombinase_clustering()
-
-
-### load recombinase all info file
-read_recombinase_contig_info <- function() {
-    d <- read_tsv(here(recombinase_directory, "mge_recombinase.tsv"), show_col_types = FALSE)
-    return(d)
-}
-recombinase_contig_info <- read_recombinase_contig_info()
-
-
-### filtered contigs with length minimal length cutoff
-list_filtered_contigs <- function(recombinase_contig_info = read_recombinase_contig_info()) {
-    d <- recombinase_contig_info %>%
-        filter(contig_length >= contig_length_cutoff) %>%
-        select(contig) %>%
-        distinct() # there could be >1 rec in a contig
-    return(d)
-}
-
-filtered_contigs <- list_filtered_contigs(recombinase_contig_info)
-
-
-# load MGE contig tracking table
-read_mge_to_mags_checkm2 <- function() {
-    d <- read_tsv(here(v3_contig_tracking_directory, "mge_to_mags_checkm2.tsv"), show_col_types = FALSE)
-    return(d)
-}
-
-mge_to_mags_checkm2 <- read_mge_to_mags_checkm2()
-
-
-read_genome_info_checkm2 <- function() {
-    d <- bind_rows(
-            read_tsv(here(v2_mags_directory, "gtdbtk.bac120.summary.tsv"), show_col_types = FALSE),
-            read_tsv(here(v2_mags_directory, "gtdbtk.ar53.summary.tsv"), show_col_types = FALSE)
-            ) %>%
-        select(genome = user_genome, taxonomy = classification, red_value)
-    return(d)
-}
-
-genome_info_checkm2 <- read_genome_info_checkm2()
-
-taxonomy_checkm2 <- genome_info_checkm2 %>%
-  separate(taxonomy, sep = ";",
-    into = c("domain", "phylum", "class", "order", "family", "genus", "species")
-  ) %>%
-  select(-red_value)
-
+rec_f <- here::here("som-data/mge_recombinase.tsv")
+v2_mags_directory <- here::here("som-data", "fig-data", "emerge_mags_v2")
+checkm2_report_f <- here::here("som-data/fig-data/emerge_mags_v2/checkm2_v1.0.2_quality_report.tsv")
 
 # load MAG cluster info
 read_mag_derep_clusters_checkm2 <- function() {
     mag_path_pattern <- "(?<=/)[^/]*(?=.fna)"
     genome_set_pattern <- "^[^/]*(?=/)"
-
     d <- read_tsv(
         here(v2_mags_directory, "95_ANI_clusters.tsv"),
         show_col_types = FALSE,
@@ -264,17 +195,11 @@ read_mag_derep_clusters_checkm2 <- function() {
             genome_set = map_chr(genome_path, str_extract, pattern = genome_set_pattern)
             ) %>%
         select(representative, genome)
+    
     return(d)
 }
+
 mag_derep_clusters_checkm2 <- read_mag_derep_clusters_checkm2()
-
-
-clusters <- recombinase_clustering %>%
-  filter(cluster %in% c("100_AAI", "90_AAI")) %>%
-  unnest(data) %>%
-  pivot_wider(names_from = cluster, values_from = representative) %>%
-  rename(recombinase = contig, AAI_100 = `100_AAI`, AAI_90 = `90_AAI`)
-
 
 ### select only MAGs binned from contigs in samples used in this study
 ### filter redudant MAGs wihtin the same sample
@@ -302,54 +227,10 @@ mag_metadata_df <- mag_metadata_df_ori %>%
 
 mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
 
-
-### re-process contig tracking, by jiarong
-df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
-  select(contig, genome_contig, MAG) %>%
-  distinct() %>%
-  inner_join(
-    recombinase_contig_info %>%
-      select(contig, Sample) %>%
-      distinct()
-    ) %>%
-  inner_join(mag2sample_df) %>%
-  select(contig, genome_contig, Sample, mag_sample) %>%
-  filter(Sample == mag_sample) %>%
-  select(contig, genome_contig, Sample)
-
-n_contig_binned <- df_contig_tracking_filt %>% nrow
-
-mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
-  inner_join(df_contig_tracking_filt)
-
-n_rec_binned <- mge_to_mags_checkm2_filt %>% nrow
-# total recombinase encoding contigs >= 3kbp
-n_contig_total <- recombinase_contig_info %>% 
-    filter(contig_length>=3000) %>% 
-    select(contig, contig_length) %>% 
-    distinct() %>% nrow
-# some stats
-cat('[INFO] # of contigs >=3kb binned: ', n_contig_binned, '\n')
-cat('[INFO] # of recombinase binned: ', n_rec_binned, '\n')
-cat('[INFO] # of contits >=3kb: ', n_contig_total, '\n')
-cat('[INFO] % of contigs >=3kb binned: ', scales::percent(n_contig_binned/n_contig_total, accuracy = .1), '\n')
-
-# contigs with CheckM2 MAG taxonomy
-mag_contigs <- mge_to_mags_checkm2_filt %>%
-  separate(taxonomy, sep = ";",
-    into = c("domain", "phylum", "class", "order", "family", "genus", "species")
-    ) %>%
-  filter(!is.na(recombinase)) %>%
-  left_join(clusters) %>%
-  rename(origin2 = type) %>%
-  #distinct(contig, origin2, phylum, ANI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line
-  left_join(
-    recombinase_contig_info %>%
-      select(contig, contig_length) %>%
-      distinct()
-    )
-
-df_mag_per_cluster <- mag_contigs %>% group_by(MAG) %>%
+df_mag_per_cluster <- read_tsv(rec_f, col_types = cols()) %>% 
+    rename(MAG = mag) %>%
+    filter(!is.na(MAG)) %>%
+    group_by(MAG) %>%
     summarise(mge_per_cell = n()) %>% ungroup() %>%
     right_join(
         mag_derep_clusters_checkm2 %>% filter(genome %in% mag2sample_df$MAG), 
@@ -389,7 +270,7 @@ df_add_scg8 <- df_add_scg %>%
 
 
 # show the stats needed for main text
-#tapply(df_add_scg8$mge_per_cell, df_add_scg8$source, summary)
+tapply(df_add_scg8$mge_per_cell, df_add_scg8$source, summary)
 
 my_comparisons <- list(c("contig", "mag"), c("mag", "khedkar et al."), c("contig", "khedkar et al."))
 options(repr.plot.width=3, repr.plot.height=2.3, repr.plot.res=300)

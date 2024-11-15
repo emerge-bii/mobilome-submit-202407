@@ -175,80 +175,12 @@ mag_metadata_df <- mag_metadata_df_ori %>%
 
 mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
 
-
-### re-process contig tracking, by jiarong
-df_contig_tracking_filt <- mge_to_mags_checkm2 %>%
-  select(contig, genome_contig, MAG) %>%
-  distinct() %>%
-  inner_join(
-    recombinase_contig_info %>%
-      select(contig, Sample) %>%
-      distinct()
-    ) %>%
-  inner_join(mag2sample_df) %>%
-  select(contig, genome_contig, Sample, mag_sample) %>%
-  filter(Sample == mag_sample) %>%
-  select(contig, genome_contig, Sample)
-
-#### add MAG contig match to MGE recombinase master table
-#df_contig_tracking_filt2 <- mge_to_mags_checkm2 %>%
-#  select(contig, genome_contig, MAG) %>%
-#  distinct() %>%
-#  inner_join(
-#    recombinase_contig_info %>%
-#      select(contig, Sample) %>%
-#      distinct()
-#    ) %>%
-#  inner_join(mag2sample_df) %>%
-#  select(contig, genome_contig, Sample, mag_sample, MAG) %>%
-#  filter(Sample == mag_sample) %>%
-#  select(contig, genome_contig, Sample, MAG)
-#
-#df_rec_master <- recombinase_contig_info %>%
-#  left_join(
-#    df_contig_tracking_filt2 %>%
-#      left_join(
-#        mag_metadata_df %>% select(MAG=mag_name, Completeness, Classification) 
-#      ) %>%
-#      group_by(contig) %>%
-#      arrange(desc(Completeness)) %>%
-#      filter(row_number() == 1) %>%
-#      select(contig, mag=MAG, mag_contig=genome_contig, mag_lineage=Classification)
-#  )
-#
-#df_rec_master %>% write_tsv('mge_recombinase.master.tsv')
-
-n_contig_binned <- df_contig_tracking_filt %>% pull(contig) %>% unique() %>% length()
-
-mge_to_mags_checkm2_filt <- mge_to_mags_checkm2 %>%
-  inner_join(df_contig_tracking_filt)
-
-n_rec_binned <- mge_to_mags_checkm2_filt %>% nrow
-# total recombinase encoding contigs >= 3kbp
-n_contig_total <- recombinase_contig_info %>% 
-    filter(contig_length>=3000) %>% 
-    select(contig, contig_length) %>% 
-    distinct() %>% nrow
-# some stats
-cat('[INFO] # of contigs >=3kb binned: ', n_contig_binned, '\n')
-cat('[INFO] # of recombinase binned: ', n_rec_binned, '\n')
-cat('[INFO] # of contits >=3kb: ', n_contig_total, '\n')
-cat('[INFO] % of contigs >=3kb binned: ', scales::percent(n_contig_binned/n_contig_total, accuracy = .1), '\n')
-
 # contigs with CheckM2 MAG taxonomy
-mag_contigs <- mge_to_mags_checkm2_filt %>%
-  separate(taxonomy, sep = ";",
-    into = c("domain", "phylum", "class", "order", "family", "genus", "species")
-    ) %>%
-  filter(!is.na(recombinase)) %>%
-  left_join(clusters) %>%
-  rename(origin2 = type) %>%
-  #distinct(contig, origin2, phylum, ANI_100, AAI_90) %>% ### NOTE: changed by jiarong - delete this line
-  left_join(
-    recombinase_contig_info %>%
-      select(contig, contig_length) %>%
-      distinct()
-    )
+mag_contigs <- recombinase_contig_info %>%
+     select(recombinase, origin2, contig, contig_length, mag, mag_lineage) %>%
+     filter(!is.na(mag) & contig_length >= contig_length_cutoff) %>%
+     separate(mag_lineage, sep=";", into = c("domain", "phylum", "class", "order", "family", "genus", "species"))
+
 
 type_proportions <- mag_contigs %>%
   group_by(phylum, origin2) %>%
@@ -342,16 +274,18 @@ plot_alpha_diversity <- function(df, fileprefix, counting = contig, gcounting = 
     #cowplot::theme_cowplot()
   )
 
+  max_richness = alpha_diversity %>% pull(richness_per_species) %>% max() %>% round(0)
+  second_richness = alpha_diversity %>% arrange(desc(richness_per_species)) %>% slice(2) %>% pull(richness_per_species)
+
   base_plot <- alpha_diversity %>%
     ggplot(aes(origin2, phylum, fill = richness_per_species)) +
     tile_layers +
-    scale_fill_distiller("MGE recombinase \nper genome", palette = "YlGn", direction = 1) +
+    scale_fill_distiller("MGE recombinase \nper genome", palette = "YlGn", direction = 1, breaks=c(0, 10, 20, 30), limits = c(0, max_richness+1)) +
     #scale_fill_distiller('', palette = "YlGn", direction = 1) +
     #guides(fill = guide_legend(title.position = 'bottom')) +
     guides(x=guide_axis(angle=45), fill=guide_colorbar(title.position = 'top', frame.colour = 'black', ticks.colour = 'black'))
 
-  max_richness = alpha_diversity %>% pull(richness_per_species) %>% max() %>% round(0)
-  second_richness = alpha_diversity %>% arrange(desc(richness_per_species)) %>% slice(2) %>% pull(richness_per_species)
+
   trunc_plot <- alpha_diversity %>%
     mutate(richness_per_species = ifelse(richness_per_species == max(richness_per_species), second_richness, richness_per_species)) %>%
     ggplot(aes(origin2, phylum, fill = richness_per_species)) +

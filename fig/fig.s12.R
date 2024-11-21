@@ -4,8 +4,8 @@ source(here::here('setup.R'))
 ### partial carriage
 
 
-tab_f <- 'som-data/partial_carriage.info.tsv'
-rec_f <- 'som-data/mge_recombinase.tsv'
+tab_f <- here::here('som-data/partial_carriage.info.tsv')
+rec_f <- here::here('som-data/mge_recombinase.tsv')
 
 stable <- 'N'
 unstable <- 'Y'
@@ -13,8 +13,8 @@ cohen_d_cutoff <- 1
 
 df_rec <- read_tsv(rec_f, col_types = cols())
 df <- read_tsv(tab_f, col_types = cols()) %>%
-    select(-(Sample:origin2)) %>%
-    left_join(df_rec, by = c("recombinase")) %>%
+    #select(-(Sample:origin2)) %>%
+    #left_join(df_rec, by = c("recombinase")) %>%
     dplyr::mutate(origin=origin2, Year=as.factor(Year), Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(Year) & Year != 2010 & Habitat != 'Collapsed Palsa') %>%
     dplyr::mutate(cohen_d_genome = if_else(cohen_d_upstream >= cohen_d_downstream, cohen_d_upstream, cohen_d_downstream)) %>%
@@ -203,8 +203,8 @@ cohen_d_cutoff <- 1
 
 df_rec <- read_tsv(rec_f, col_types = cols())
 df <- read_tsv(tab_f, col_types = cols()) %>%
-    select(-(Sample:origin2)) %>%
-    left_join(df_rec, by = c("recombinase")) %>%
+    #select(-(Sample:origin2)) %>%
+    #left_join(df_rec, by = c("recombinase")) %>%
     dplyr::mutate(origin=origin2, Year=as.factor(Year), Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(Year) & Year != 2010 & Habitat != 'Collapsed Palsa') %>%
     dplyr::mutate(cohen_d_genome = if_else(cohen_d_upstream >= cohen_d_downstream, cohen_d_upstream, cohen_d_downstream)) %>%
@@ -275,8 +275,8 @@ cohen_d_cutoff <- 1
 
 df_rec <- read_tsv(rec_f, col_types = cols())
 df <- read_tsv(tab_f, col_types = cols()) %>%
-    select(-(Sample:origin2)) %>%
-    left_join(df_rec, by = c("recombinase")) %>%
+    #select(-(Sample:origin2)) %>%
+    #left_join(df_rec, by = c("recombinase")) %>%
     dplyr::mutate(origin=origin2, Year=as.factor(Year), Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(Year) & Year != 2010 & Habitat != 'Collapsed Palsa') %>%
     dplyr::mutate(cohen_d_genome = if_else(cohen_d_upstream >= cohen_d_downstream, cohen_d_upstream, cohen_d_downstream)) %>%
@@ -345,8 +345,8 @@ cohen_d_cutoff <- 1
 
 df_rec <- read_tsv(rec_f, col_types = cols())
 df <- read_tsv(tab_f, col_types = cols()) %>%
-    select(-(Sample:origin2)) %>%
-    left_join(df_rec, by = c("recombinase")) %>%
+    #select(-(Sample:origin2)) %>%
+    #left_join(df_rec, by = c("recombinase")) %>%
     dplyr::mutate(origin=origin2, Year=as.factor(Year), Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
     dplyr::filter(!is.na(Year) & Year != 2010 & Habitat != 'Collapsed Palsa') %>%
     dplyr::mutate(cohen_d_genome = if_else(cohen_d_upstream >= cohen_d_downstream, cohen_d_upstream, cohen_d_downstream)) %>%

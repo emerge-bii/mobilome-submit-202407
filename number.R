@@ -9,8 +9,10 @@ rec_df <- read_tsv(rec_f, col_types = cols())
 
 n_rec_total <- nrow(rec_df)
 n_rec_uniq <- rec_df %>% pull(OTU) %>% discard(is.na) %>% unique %>% length
+n_rec_contig <- rec_df %>% pull(contig) %>% unique %>% length
 sprintf('[INFO] total MGE recombinase number: %d', n_rec_total)
 sprintf('[INFO] unique MGE recombinase number: %d', n_rec_uniq)
+sprintf('[INFO] total MGE recombinase encoding contig number: %d', n_rec_contig)
 
 rec_by_habitat_df <- rec_df %>% pull(Habitat) %>% table %>% tibble::enframe()
 print(rec_by_habitat_df)
@@ -69,8 +71,12 @@ is_kegg_cnt <- read_tsv(is_f, col_types = cols()) %>%
 total_kegg_cnt <- integron_kegg_cnt + ce_kegg_cnt + phl_kegg_cnt + is_kegg_cnt
 sprintf('[INFO] total cargo genes and IS interrupted genes with KEGG annotation: %d', total_kegg_cnt)
 
-curated_kegg_cnt <- read_tsv(here::here("som-data/impact_function.curated.tsv"), col_types = cols()) %>% nrow()
+curated_df <- read_tsv(here::here("som-data/impact_function.curated.tsv"), col_types = cols()) 
+curated_kegg_cnt <- curated_df %>% nrow()
 sprintf('[INFO] %% of curated KEGG annotations: %d / %d (%.1f%%)', curated_kegg_cnt, total_kegg_cnt, curated_kegg_cnt/total_kegg_cnt*100)
+
+curated_kegg_cnt_extrapolate <- n_rec_total / 6467 * curated_kegg_cnt  
+# add curated_dark_mobilome_extrapolate based on dark mobilome curation column
 
 ### activity and mobility
 nh_pw_f <- here::here('som-data/genomic_neighborhood.pairwise_ani.tsv')
@@ -121,3 +127,28 @@ sprintf("[INFO] Among %d recombinase OTUs expressed in metaT, %d (%.1f%%) were d
 n_is_interrupt <- read_tsv(is_f, col_types=cols()) %>% nrow()
 n_is <- rec_by_type_df %>% filter(name == "IS_Tn") %>% pull(count) %>% .[[1]]
 sprintf("[INFO] %% of IS_Tn recombinase interrupting genes: %d / %d (%.1f%%)", n_is_interrupt, n_is, n_is_interrupt/n_is*100)
+
+
+### Guillermo metabolism counts
+
+curated_df %>% filter(stringr::str_detect(`Shorter annotation`, regex("YD.repeat"))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "YD-repeat-containing")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Carbohydrate metabolism", ignore_case=T)) & stringr::str_detect(Role, regex("polysaccharide"))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Polysaccharide")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Central carbon metabolism", ignore_case=T)) | `Shorter annotation` %in% c("pyrophosphate-dependent phosphofructokinase", "glucose-6-phosphate 1-dehydrogenase", "deoxyribose-phosphate aldolase", "alcohol dehydrogenase GroES domain", "L-lactate dehydrogenase", "fumarase", "malate dehydrogenase")) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Central carbon metabolism")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Nitrogen metabolism|Amino acid metabolism|Nucleotide metabolism", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Nitrogen cycling")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Sulfur metabolism", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Sulfur cycling")
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Sulfur metabolism", ignore_case=T)) & stringr::str_detect(`Shorter annotation`, regex("cysteine desulfurase", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Cysteine desulfurase")
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Sulfur metabolism", ignore_case=T)) & stringr::str_detect(`Shorter annotation`, regex("selenocysteine lyase", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Selenocysteine lyase")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Iron metabolism", ignore_case=T)) | (stringr::str_detect(`Functional category`, regex("Transport", ignore_case=T)) & stringr::str_detect(`Shorter annotation`, regex("tonB|iron", ignore_case=T)))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% select(impact_type, Habitat) %>% filter(impact_type=="cargo")  %>% separate(Habitat, sep=",", into=c("col1", "col2", "col3")) %>% pivot_longer(cols=c("col1", "col2", "col3"), names_to="tmp_col", values_to="count") %>% filter(!is.na(count)) %>% separate(count, sep=":", into=c("Habitat", "count")) %>% mutate(count = as.numeric(count)) %>% group_by(impact_type, Habitat) %>% summarise(count=sum(count)) %>% mutate(gene_annotation = "Iron transport")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("DNA repair|DNA replication", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Genome maintenance")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Transcription", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Transcription")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Translation", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Translation")
+
+curated_df %>% filter(stringr::str_detect(`Functional category`, regex("Posttranslational modifications", ignore_case=T))) %>% mutate(impact_type = if_else(`MGE type` == "IS element", "interruption", "cargo")) %>% group_by(impact_type) %>% summarise(count = sum(count)) %>% mutate(gene_annotation = "Posttranslational modifications / proteome maintenance")

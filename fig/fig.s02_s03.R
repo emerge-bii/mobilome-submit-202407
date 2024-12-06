@@ -1,6 +1,6 @@
 source(here::here('setup.R'))
 
-tab_f <- 'som-data/mge_recombinase.tsv'
+tab_f <- here::here('som-data/mge_recombinase.tsv')
 contig_min_len <- 3000
 
 df <- read_tsv(tab_f, col_types = cols()) %>% mutate(group = rec_subfamily, type = rec_family)
@@ -230,7 +230,7 @@ AB
 LL
 '
 
-gg <- fig.s1c & theme(legend.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0), legend.key.size = unit(10, 'pt'), legend.position = 'bottom')
+gg <- fig.s1d & theme(legend.margin = margin(0,0,0,0), legend.box.margin = margin(0,0,0,0), legend.key.size = unit(10, 'pt'), legend.position = 'bottom')
 
 leg <- cowplot::get_legend(gg)
 

@@ -11,9 +11,12 @@ conda activate mobilome_submit_v0*
 
 ## download data package
 
-- Option 1: You can download the data package from this url (under contructon) and
+You can download the data package from this (url)[https://zenodo.org/records/14287562] and
 name it as `som-data`.
-- Option 2: If you are on OSC, it's already there under the EMERGE globus directory. You can make symlink named `som-data` by `ln -s /fs/ess/PAS1212/EMERGE_sharing/mobilome_paper/som-data`
+```bash
+curl -O  https://zenodo.org/records/14287562/files/som-data.tar.gz?download=1
+tar -xzf som-data.tar.gz
+```
 
 # Reproduce figs
 

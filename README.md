@@ -5,7 +5,7 @@
 ```bash
 git clone https://github.com/emerge-bii/mobilome-submit-202407.git
 cd mobilome-submit-202407
-mamba env create -f requirements.yaml --force
+mamba env create -f requirements.yaml
 conda activate mobilome_submit_v0*
 ```
 

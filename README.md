@@ -14,7 +14,7 @@ conda activate mobilome_submit_v0*
 You can download the data package from this (url)[https://zenodo.org/records/14287562] and
 name it as `som-data`.
 ```bash
-curl -O  https://zenodo.org/records/14287562/files/som-data.tar.gz?download=1
+curl -o som-data.tar.gz  https://zenodo.org/records/14287562/files/som-data.tar.gz?download=1
 tar -xzf som-data.tar.gz
 ```
 

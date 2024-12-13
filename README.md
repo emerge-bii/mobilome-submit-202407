@@ -1,3 +1,7 @@
+
+# Description
+Scripts from "Mobilome in Mire" project. This repo consolidates code and scripts throughout the project. Note that many of them are not portable, ie., they can not be run in a different computer without modification. Here we provide them here mainly for the purpose of disclosure, not as a product. Below are steps to reproduce the figures from supplementary materials.
+
 # Setup
 
 ## Create conda environment
@@ -6,10 +10,10 @@
 git clone https://github.com/emerge-bii/mobilome-submit-202407.git
 cd mobilome-submit-202407
 mamba env create -f requirements.yaml
-conda activate mobilome_submit_v0*
+conda activate mobilome_submit_v0.1
 ```
 
-## download data package
+## Download data package
 
 You can download the data package from this [url](https://zenodo.org/records/14287562) and
 name it as `som-data`.

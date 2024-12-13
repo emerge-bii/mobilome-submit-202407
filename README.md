@@ -1,6 +1,6 @@
 
 # Description
-Scripts from "Mobilome in Mire" project. This repo consolidates code and scripts throughout the project. Note that many of them are not portable, ie., they can not be run in a different computer without modification. Here we provide them here mainly for the purpose of disclosure, not as a product. Below are steps to reproduce the figures from supplementary materials.
+Scripts from "Mobilome in Mire" project. This repo consolidates code and scripts throughout the project. Note that many of them are not directly portable, ie., they need minor modification to run on a different computer. Here we provide them for the purpose of disclosure and documenting the steps performed in this analysis. Below are steps to reproduce the figures and supplementary materials.
 
 # Setup
 
@@ -28,7 +28,7 @@ tar -xzf som-data.tar.gz
 ./generate-fig.sh
 ```
 
-You can see figs main figures: Fig.1, Fig.2, Fig.4 and supplementary figures: fig.S2 - fig.S12 in `fig.outdir`. Note that Fig.3, Fig.5, fig.S1 were manually made so not included here.
+You can see figs main figures: Fig.1, Fig.2, Fig.4 and supplementary figures: fig.S2 - fig.S12 in `fig.outdir`. Note that Fig.3, Fig.5, fig.S1 were manually created so are not included here.
 
 
 # Package versions

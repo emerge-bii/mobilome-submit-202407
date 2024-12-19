@@ -1,6 +1,6 @@
 
 # Description
-Scripts from "Mobilome in Mire" project. This repo consolidates code and scripts throughout the project. Note that many of them are not directly portable, ie., they need minor modification to run on a different computer. Here we provide them for the purpose of disclosure and documenting the steps performed in this analysis. Below are steps to reproduce the figures and supplementary materials.
+Scripts from "Mobilome in Mire" project. This repo consolidates code and scripts throughout the project. Note that many of them are not directly portable, ie., they need minor modification to run on a different computer. Here we provide them for the purpose of disclosure and documenting the steps performed in this analysis. Below are steps to reproduce the figures.
 
 # Setup
 

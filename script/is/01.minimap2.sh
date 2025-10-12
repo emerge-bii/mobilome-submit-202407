@@ -1,5 +1,9 @@
 #!/bin/bash
 
+################################################
+# run minimap2 to identify IS interrupted genes
+###############################################
+
 cd ~/mge/recombinase/is-split-gene
 Cpu=8
 

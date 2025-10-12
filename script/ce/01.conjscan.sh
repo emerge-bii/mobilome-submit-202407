@@ -1,12 +1,16 @@
 #!/bin/bash
 
+########################################
+# run conjscan for CE boundary curation
+########################################
 set -e
 
 date
-cd ~/mge/recombinase/refine
-Seqfile=~/mge/recombinase/refine/CE.contig.genes.faa
-Cpu=24
+cd ~/mge/recombinase/refine  # working directory
+Seqfile=~/mge/recombinase/refine/CE.contig.genes.faa  # ORFs from contigs (protein)
+Cpu=24  # threads
 
+### run plasmid models
 Wkdir=~/mge/recombinase/refine/CE.contig.genes.wkdir1
 macsyfinder --models CONJScan/Plasmids all \
 	    --sequence-db "$Seqfile" \
@@ -17,6 +21,7 @@ macsyfinder --models CONJScan/Plasmids all \
 ### see annotations in "best_solution.tsv"
 date
 
+### run integrated CE models
 Wkdir=~/mge/recombinase/refine/CE.contig.genes.wkdir2
 macsyfinder --models CONJScan/Chromosome all \
 	    --sequence-db "$Seqfile" \

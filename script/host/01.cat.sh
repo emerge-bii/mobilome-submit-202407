@@ -1,15 +1,18 @@
 #!/bin/bash
 
-### CAT DB for GTDB notes here: https://github.com/MGXlab/gtdb2cat
+#################################
+# host taxon assignment with CAT
+#################################
 
+# CAT DB for GTDB notes here: https://github.com/MGXlab/gtdb2cat
 module use /fs/project/PAS1117/modulefiles
 module load CAT/5.2.3
 
-Seqfile=~/mge/recombinase/recombinase.contig.fna
-Wkdir=~/mge/recombinase/host/contig-taxa
-DB=~/mge/db/cat/CAT_database
-TAX=~/mge/db/cat/CAT_taxonomy
-CPU=28
+Seqfile=~/mge/recombinase/recombinase.contig.fna  # contigs
+Wkdir=~/mge/recombinase/host/contig-taxa  # working directory
+DB=~/mge/db/cat/CAT_database  # DB
+TAX=~/mge/db/cat/CAT_taxonomy # DB
+CPU=28 # threads
 
 Wkdir=$Seqfile.catout
 mkdir -p $Wkdir

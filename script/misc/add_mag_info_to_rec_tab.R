@@ -1,7 +1,7 @@
 
-###
-# MAG rec per genome
-###
+###########################################
+# calculate recombinase per genome in MAGs
+###########################################
 
 # set dirctories
 v2_mags_directory <- here("som-data", "fig-data", "emerge_mags_v2")

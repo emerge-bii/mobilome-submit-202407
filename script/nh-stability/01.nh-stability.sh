@@ -1,14 +1,17 @@
 #!/bin/bash
 
-cd ~/mge/recombinase/stability
-Cpu=4
+###############################################################
+# MGE recombinbase host genomic neighborhood stability analysis
+###############################################################
+cd ~/mge/recombinase/stability # working directory
+Cpu=4  # threads
+Clusttab=gene.prefilter.hmmtblout.tophit.cdhit1d0.faa.clstr  # cdhit cluster output
+Rec_allinfo_f=../recombinase.allinfo.tsv  # recombinase summary table
+Rec_dram_neighborhood_f=../gene.prefilter.hmmtblout.tophit.dram_up2_down2_w_anchor.tsv  # table with recombinase gene coordinates in contigs
+Rec_contig_f=../gene.prefilter.hmmtblout.tophit.contig.fna  # recombinase encoding contigs
+Label=all  # label for output files
 
 Scriptdir=~/scripts
-Clusttab=gene.prefilter.hmmtblout.tophit.cdhit1d0.faa.clstr
-Rec_allinfo_f=../recombinase.allinfo.tsv
-Rec_dram_neighborhood_f=../gene.prefilter.hmmtblout.tophit.dram_up2_down2_w_anchor.tsv
-Rec_contig_f=../gene.prefilter.hmmtblout.tophit.contig.fna
-Label=all
 
 date
 set -e

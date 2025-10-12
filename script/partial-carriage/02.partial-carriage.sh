@@ -1,13 +1,15 @@
 #!/bin/bash
 
+##############################################
+# main script for partical carriage analysis
+#############################################
 set -e
 
-cd ~/mge/recombinase/partial-carriage/all_recombinase.coord.min_up_down_20000.list.splitdir
-
-REC_ALLINFO=~/mge/recombinase/recombinase.allinfo.tsv
-REC_DRAM=~/mge/recombinase/recombinase.allinfo.dram.tsv
-LABEL=all_recombinase.coord.min_up_down_20000
-SCRIPTDIR=~/scripts
+cd ~/mge/recombinase/partial-carriage/all_recombinase.coord.min_up_down_20000.list.splitdir  # working directory
+REC_ALLINFO=~/mge/recombinase/recombinase.allinfo.tsv  # recombinase summary table
+REC_DRAM=~/mge/recombinase/recombinase.allinfo.dram.tsv  # DRAM annotation table of recombianses
+LABEL=all_recombinase.coord.min_up_down_20000  # label for output files
+SCRIPTDIR=~/scripts  # directory for scripts
 
 date
 

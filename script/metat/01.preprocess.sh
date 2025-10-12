@@ -1,8 +1,12 @@
 #!/bin/bash
 
-Wkdir=~/mge/metat/nova-only.wkdir
-Contigdir=~/mge/contig-dram/jgi-jgi
-R1=nova-only/714E11014metaG_FD_JGI.1.fq.gz
+################################################
+# run transcriptM to map RNAseq reads to contigs
+#################################################
+
+Wkdir=~/mge/metat/nova-only.wkdir  # working directory
+Contigdir=~/mge/contig-dram/jgi-jgi  # contig directory
+R1=nova-only/714E11014metaG_FD_JGI.1.fq.gz  # RNAseq reads paired-end read1 file
 Cpu=8
 
 Dname=$(dirname $R1)

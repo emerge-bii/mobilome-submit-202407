@@ -1,0 +1,20 @@
+# Disclaimer
+This directory consolidates scripts, code, and various snippets used in preprocessing steps to get the data in Zenodo. Note that they are custom and not portable to other computers, and are prodvided here for the purpose of disclosure rather than a product.
+
+# Main analyses 
+- 1. MGE recombinase identification: `mge-rec-id`
+
+- 2. Host taxa assignment: `host`
+
+- 3. MGE boundary curation
+  * conjugative elements: `CE`
+  * phage-like elements: `phl`
+  * integron: `integron`
+  * insertion sequence interrupted gene: `is`
+
+- 4. Genomic neighborhood stability: `nh-stability`
+
+- 5. MGE recombinase activity: `metat`
+
+- 6. MGE partial carriage in host: `partial-carriage`
+

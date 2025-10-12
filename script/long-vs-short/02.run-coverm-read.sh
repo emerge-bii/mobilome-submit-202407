@@ -1,6 +1,9 @@
 #!/bin/bash
 #SBATCH --nodes=1 --ntasks=8 --time=12:00:00
 
+###############################################
+# map short reads to high quality hybrid MAGs
+###############################################
 set -e
 
 READ1=read-trimmed/MainAutochamber.201907_E_1_1to5.1.trim_paired.fq.gz

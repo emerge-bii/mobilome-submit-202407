@@ -1,19 +1,23 @@
 #!/bin/bash
 
+#######################################
+# Make summary table for gene activity
+#######################################
+
 set -e
 
 date
 
 ### metaT setting
-Pydirseqtab=~/mge/metat/nova-only.wkdir/714E11014metaG_FD_JGI/SS.final.tsv
-Rectab=~/mge/recombinase/recombinase.allinfo.tsv
-Lab=cov_0d9
-Mincov=0.9
+Pydirseqtab=~/mge/metat/nova-only.wkdir/714E11014metaG_FD_JGI/SS.final.tsv  # pydirseq output
+Rectab=~/mge/recombinase/recombinase.allinfo.tsv  # recombinase summary table
+Lab=cov_0d9  # label for output files
+Mincov=0.9   # minimal coverage by RNAseq reads required for a gene to be called active
 
 ### paired metaG setting
-Metag_min_depth_cov=0
-Lab2=depth_cov_0
-Metag_cov_dir=~/mge/metat/paired-metag/all.wkdir
+Metag_min_depth_cov=0  # minimal gene coverage by metaG reads to be considered in this analysis
+Lab2=depth_cov_0  # label used in output files
+Metag_cov_dir=~/mge/metat/paired-metag/all.wkdir  #contig directory
 
 Wkdir=$(dirname $Pydirseqtab)
 Sample=$(basename $Wkdir)

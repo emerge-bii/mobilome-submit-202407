@@ -1,6 +1,8 @@
 #!/bin/bash
 
-# get conservative boundary
+####################################################
+# get conservative boundary from vs2-sop output
+###################################################
 
 perl -pe 's/^((.+?)-cat_[0-9]+_[0-9]+\t)/\2\t\1/' dramv-annotate/annotations.tsv | sed '1s/^/contig_id\tgene_id/' | csvtk join -L -t -f"contig_id,gene_position;contig_id,checkv_trimmed_orf_idx" - <(sed 's/||/__/' vs2sop.w_int.gene_feature_w_int.tsv | cut -f1,4-) > vs2_checkv.dramv.add_gene_feature.4curate.tsv
 

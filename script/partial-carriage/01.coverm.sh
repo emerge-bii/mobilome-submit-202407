@@ -1,10 +1,14 @@
 #!/bin/bash
 
-Wkdir=~/mge/recombinase/partial-carriage/mapping/jgi/wkdir
-Readdir=~/mge/recombinase/partial-carriage/mapping/jgi/reads
-Contigfile=~/data/isogenie-novaseq-contig/PFST0metaG_FD_JGI.fasta
-Scriptdir=~/scripts
-Cpu=28
+####################################
+# run short read mapping to contigs
+###################################
+
+Wkdir=~/mge/recombinase/partial-carriage/mapping/jgi/wkdir  # working directory
+Readdir=~/mge/recombinase/partial-carriage/mapping/jgi/reads  # read directory
+Contigfile=~/data/isogenie-novaseq-contig/PFST0metaG_FD_JGI.fasta  # contig file
+Scriptdir=~/scripts  # script directory
+Cpu=28  # threads
 
 Contigfile=$(readlink -f $Contigfile)
 Bname=$(basename $(dirname $Contigfile))

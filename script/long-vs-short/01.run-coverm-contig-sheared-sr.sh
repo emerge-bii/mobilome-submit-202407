@@ -1,6 +1,10 @@
 #!/bin/bash
 #SBATCH --nodes=1 --ntasks=8 --time=12:00:00
 
+#######################################
+# map short read assembled contigs to 
+#   high quality hybrid MAGs 
+#######################################
 set -e
 
 READ1=contig-min1500bp-sheared/cmr2.MainAutochamber.201907_E_1_1to5.fasta

@@ -1,11 +1,14 @@
 #!/bin/bash
 
-Seqfile=~/mge/recombinase/refine/phage/Phage.certain.contig.fna
-Wkdir=~/mge/recombinase/refine/phage
-Label=0d5
-Cpu=28
+##############################################
+# run VS2 SOP for phage-like elements curation
+#################################################
 
-Scriptdir=~/scripts
+Wkdir=~/mge/recombinase/refine/phage  # working directory
+Seqfile=~/mge/recombinase/refine/phage/Phage.certain.contig.fna  # contigs
+Label=0d5  # label for output files
+Cpu=28  # threads
+Scriptdir=~/scripts  # script directory
 
 set -e
 

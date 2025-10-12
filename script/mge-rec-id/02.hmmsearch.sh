@@ -1,8 +1,12 @@
 #!/bin/bash
 
-Wkdir=~/mge/recombinase
-Seqfile=~/mge/contig-dram/20170700_S35.contigs/genes.faa
-Hmm=~/mge/db/recombinase-hmm/bork.68subfam.hmm
+################################
+# MGE recombianse identification
+###############################
+
+Wkdir=~/mge/recombinase  # working directory
+Seqfile=~/mge/contig-dram/20170700_S35.contigs/genes.faa  # protein seqs from contigs 
+Hmm=~/mge/db/recombinase-hmm/bork.68subfam.hmm  #recombinase HMMs
 Cpu=4
 
 Bname=$(basename $(dirname $Seqfile) .contigs)

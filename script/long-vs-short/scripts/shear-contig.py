@@ -1,5 +1,8 @@
 #!/usr/bin/env python
 
+### shear contigs in to even pieces
+### USAGE: python shear-contig.py <seqfile.fna> fragment_size
+
 import sys
 import os
 import screed

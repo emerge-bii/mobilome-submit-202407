@@ -3,18 +3,35 @@ This directory consolidates scripts, code, and various snippets used in preproce
 
 # Main analyses 
 - 1. MGE recombinase identification: `mge-rec-id`
+  + 01.dram.sh
+  + 02.hmmsearch.sh
+  + 03.emapper.sh
 
 - 2. Host taxa assignment: `host`
+  + 01.cat.sh  
+  + 02.find_exact_match.py
 
 - 3. MGE boundary curation
   * conjugative elements: `CE`
+    + 01.conjscan.sh
   * phage-like elements: `phl`
+    + 01.vs2-sop.sh
+    + 02.curation.sh
   * integron: `integron`
+    + 01.integron-finder.sh
   * insertion sequence interrupted gene: `is`
+    + 01.minimap2.sh
+    + 02.extract-interrupted-gene.py
 
 - 4. Genomic neighborhood stability: `nh-stability`
+  + 01.nh-stability.sh
 
 - 5. MGE recombinase activity: `metat`
+  + 01.preprocess.sh
+  + 02.pydirseq.sh
+  + 03.summary.sh
 
 - 6. MGE partial carriage in host: `partial-carriage`
+  + 01.coverm.sh
+  + 02.partial-carriage.sh
 

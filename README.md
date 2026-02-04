@@ -12,6 +12,7 @@ cd mobilome-submit-202407
 mamba env create -f requirements.yaml
 conda activate mobilome_submit_v0.1
 ```
+Installation should take ~ 8 minutes on a standard computer
 
 ## Download data package
 
@@ -30,6 +31,7 @@ tar -xzf som-data.tar.gz
 
 You can see figs main figures: Fig.1, Fig.2, Fig.4 and supplementary figures: fig.S2 - fig.S12 in `fig.outdir`. Note that Fig.3, Fig.5, fig.S1 were manually created so are not included here.
 
+Figure generation should take ~ 10-15 minutes on a standard computer
 
 # Package versions
 See R package used and versions details below (from `sessionInfo()`):

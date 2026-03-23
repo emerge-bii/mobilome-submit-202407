@@ -1,128 +1,185 @@
 source(here::here('setup.R'))
 
-#################
-# data wrangling
-##################
+###
+# Fig.2.A is from external images
+###
 
-### dirctories
+###
+# Fig.2.B
+###
+
+tab_f <- 'som-data/mge_recombinase.tsv'
+
+df <- read_tsv(tab_f, col_types = cols())
+
+# Add distribution of all identified recombinase w/o any length or habitat filtering
+
+# MGE type distribution across habitats
+
+pal <- ggpubr::get_palette(palette='npg', 4)
+pal <- c(pal, 'grey50')
+
+# sort MGE recombinase by counts
+
+df_tmp <- df %>% 
+    dplyr::group_by(origin2) %>%
+    dplyr::summarise(count=n()) %>%
+    dplyr::mutate(tmp_sum=sum(count)) %>%
+    dplyr::mutate(perc=count/tmp_sum) %>%
+    dplyr::arrange(desc(perc))
+
+select_vec <- df_tmp %>% dplyr::pull(origin2)
+
+select_vec <- c(select_vec[ !select_vec=='ambiguous' ], 'ambiguous')
+
+names(pal) <- select_vec
+
+df1 <- df %>% 
+    dplyr::filter(!is.na(Habitat)) %>%
+    group_by(Habitat, origin2) %>% summarise(count=n()) %>%
+    mutate(type_sum=sum(count)) %>% mutate(perc=count/type_sum) %>%
+    mutate(label_pos=1.02) %>%
+    mutate(origin=origin2) %>%
+    dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen'))) %>%
+    dplyr::mutate(origin=factor(origin, levels=select_vec)) %>%
+    dplyr::filter(!is.na(Habitat)) %>%
+    dplyr::filter(Habitat!='Collapsed Palsa')
+
+options(repr.plot.width=3, repr.plot.height=4, repr.plot.res=300)
+gg <- (ggplot(data=df1, aes(x=Habitat, y=perc, fill=origin))
+       + geom_col() + scale_fill_manual(values=pal, name='')
+       + geom_text(data = df1 %>% group_by(Habitat) %>% filter(row_number() == 1), aes(y=label_pos, label=type_sum), angle=25, size=3)
+       + theme_classic()
+       + scale_y_continuous(labels = scales::percent_format(accuracy = 1L), limits = c(0, 1.08))
+       + guides(fill=guide_legend(ncol = 2))
+       + theme(legend.position = 'bottom', 
+               legend.box.spacing = unit(0, 'pt'), legend.box.margin = margin(0, 0, 0, 0), 
+               legend.spacing = unit(0, 'pt'), legend.margin = margin(0, 0, 0, 0), legend.key.size = unit(8, 'pt'))
+       + labs(x='', y='MGE recombinases (%)')
+)
+
+fig2b <- gg
+
+
+
+#########
+# Fig.2.C
+#########
+
+# donut plot of rec vs. all genes
+
+tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/all_gene.ko_cnt_w_clu.tsv'
+
+df_donut <- read_tsv(tab_f, col_types = cols(), col_names = c('gene', 'count')) %>%
+    mutate(group = if_else(stringr::str_starts(gene, 'K'), 'Annotated',
+                          if_else(stringr::str_starts(gene, 'OTU'), 'Unannotated',
+                                 if_else(gene == 'recombinase', 'MGE recombinase', gene)))) %>%
+    group_by(group) %>%
+    summarise(count = sum(count)) %>%
+    ungroup()
+
+df_donut2 <- df_donut
+
+df_donut2 <- df_donut2 %>%
+    mutate(perc = round(100 * count / sum(count), digits = 1)) %>%
+    mutate(group = factor(group, levels = c('MGE recombinase', 'Annotated', 'Unannotated'))) %>%
+    mutate(group2 = stringr::str_c(group, '\n(', perc, '%)'))
+
+
+total_cnt <- sum(df_donut2$count)
+total_cnt <- sprintf('%.1fM', total_cnt / 1e+6)
+
+pal <- c(RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=2), 'grey50')[1:3]
+
+names(pal) <- c('MGE recombinase', 'Annotated', 'Unannotated')
+
+options(repr.plot.width = 2.5, repr.plot.height = 2.5, repr.plot.res = 300)
+gg <- ggpubr::ggdonutchart(df_donut2, 'count', label = 'group2', lab.pos = 'out', fill = 'group', color= 'group', lab.font = c(3, 'plain', 'black'), palette = pal) +
+    theme(legend.position = 'none') +
+    annotate(geom = 'text', x = 0.5, y = 0, label = total_cnt, size = 3)
+
+fig2c <- gg
+
+
+###
+# Fig.2.D
+###
+
+tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/all_gene.ko_cnt_w_clu.tsv'
+df <- read_tsv(tab_f, col_types = cols(), col_names = c('gene', 'count'))
+df_sub <- df %>% head(n=5) 
+
+col_purple <- RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=1)
+
+df_tmp3 <- df_sub %>% mutate(anno=gene)
+df_tmp3 <- df_tmp3 %>% 
+    mutate(fill=if_else(anno=='recombinase', col_purple, 'NA'))
+
+color_pal <- df_tmp3$fill
+names(color_pal) <- df_tmp3$anno
+options(repr.plot.width=2.8, repr.plot.height=2, repr.plot.res=300)
+gg <- (ggplot(data=df_tmp3, aes(x=factor(anno, levels=(anno)), y=count, fill=anno)) + geom_col(color='grey20') 
+       + theme_classic() 
+       + theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1), legend.position = 'none')
+       + scale_fill_manual(values = color_pal)
+       + scale_y_continuous(breaks = c(500000, 1000000, 1500000, 2000000), labels = c('0.5M', '1M', '1.5M', '2M'))
+       + scale_x_discrete(labels = c('MGE\nrecombinase', 'rpoE', 'drrA', 'ABC.CD.P', 'pknB'))
+#        + scale_x_discrete(labels = c('MGE recombinase', 'K03088\nRNA polymerase sigma-70 factor', 
+#                                      'K09687\nantibiotic transport system ATP-binding protein',
+#                                     'K02004\nputative ABC transport system permease', 'K08884\nserine/threonine protein kinase'))
+       + labs(x="", y="Gene count")
+      )
+
+fig2d <- gg
+
+
+###
+# Fig.2.E
+###
+
+tab_f <- here::here('som-data', 'mge_recombinase.tsv')
+scg_tab_f <- here::here('som-data', 'fig-data', 'contig_taxa', 'rp', 'all_info.all_gene.fix_domain.tsv')
+rp_gene_lst_f <- here::here('som-data', 'fig-data', 'contig_taxa', 'rp', 'rp.ko.bac_arc_shared.list')
+
+rp_gene_vec <- readLines(rp_gene_lst_f)
+df <- read_tsv(tab_f, col_types = cols())
+
+df_scg <- read_tsv(scg_tab_f, col_types=cols()) %>%
+    dplyr::filter(ko %in% rp_gene_vec) %>%
+    group_by(Sample, Habitat, Year, DepthAvg, ko) %>% 
+    summarise(rp_cnt=n()) %>%
+    summarise(rp_cnt = median(rp_cnt)) %>%
+    ungroup()
+
+    
+df_add_scg <- df %>% dplyr::filter(contig_length>=3000 & (!is.na(Habitat))) %>%
+  dplyr::mutate(origin=if_else(origin %in% c('Cell', 'IS_Tn;CE', 'IS_Tn;Phage', 'Phage;CE'), 'Other', origin)) %>%
+  dplyr::mutate(origin2=if_else(origin2 %in% c('Phage', 'PhageLike', 'PhageOther'), 'Phage', origin2)) %>%
+  group_by(origin2, Sample, Habitat, Year, DepthAvg) %>% summarise(count=n()) %>%
+  left_join(df_scg %>% select(Sample, rp_cnt), by='Sample') %>% filter(!is.na(rp_cnt)) %>%
+  dplyr::mutate(Habitat=factor(Habitat, levels=c('Palsa', 'Bog', 'Fen')), Year=as.factor(Year)) %>%
+  dplyr::filter(!is.na(Habitat)) %>%
+  dplyr::filter(!is.na(DepthAvg)) %>%
+  dplyr::mutate(Depth =  ifelse(DepthAvg >= 1 & DepthAvg < 9, "0-9", 
+       ifelse(DepthAvg >= 10 & DepthAvg < 20, "10-19", 
+       ifelse(DepthAvg >= 20 & DepthAvg < 30, "20-29",
+       ifelse(DepthAvg >= 30 & DepthAvg < 40, "30-39",
+       ifelse(DepthAvg >= 40 & DepthAvg < 50, "40-49",
+       ifelse(DepthAvg >= 50 & DepthAvg < 60, "50-59",
+       ifelse(DepthAvg >= 60 & DepthAvg < 70, "60-69",
+       ifelse(DepthAvg >= 70 & DepthAvg < 80, "70-79",
+       "80+"))))))))) %>% 
+  dplyr::mutate(mge_cnt=count, scg_cnt=rp_cnt)
+
+
+###
+# MAG rec per genome
+###
+
+# set dirctories
+rec_f <- here::here("som-data/mge_recombinase.tsv")
 v2_mags_directory <- here::here("som-data", "fig-data", "emerge_mags_v2")
-recombinase_directory <- here::here("som-data")
-v3_contig_tracking_directory <- here::here("som-data", "fig-data", "contig_tracking_v3")
-recombinase_clustering_directory <- here::here("som-data", "fig-data", "recombinase_clustering_v1")
-
-### other settings
-contig_length_cutoff <- 3000
-colour_brewer <- setNames(append(as.list(RColorBrewer::brewer.pal(12, "Paired")), c("#737373", "#FFFFFF", "#000000")), c("blue", "darkblue", "green", "darkgreen", "red", "darkred", "orange", "darkorange", "purple", "darkpurple", "yellow", "brown", "grey", "white", "black"))
-habitat_levels <- c("Palsa", "Bog", "Fen")
-colour_habitat <- c("#703C1B", "#058000", "#0001FF")
-depth_levels <- c("0-9", "10-19", "20-29", "30-39")
-depth_labels <- c("0", "10", "20", "30")
-depth_fills   <- RColorBrewer::brewer.pal(5, "BuPu")[-1]
-depth_colours <- depth_fills
-year_levels <- c("2010", "2011", "2012", "2013", "2014", "2015", "2016", "2017")
-year_labels <- c("10", "11", "12", "13", "14", "15", "16", "17")
-taxa_levels <- c("none", "phylum", "class", "order", "family", "genus", "species")
-taxa_colours <- c("#777777", RColorBrewer::brewer.pal(6, "Dark2"))
-phyla_levels <- c(
-  "Acidobacteriota",
-  "Actinomycetota",
-  "Verrucomicrobiota",
-  "Pseudomonadota",
-  "Desulfobacterota",
-  "Dormibacterota",
-  "Bacteroidota",
-  "Chloroflexota",
-  "Nitrospirota",
-  "Myxococcota",
-  "Halobacteriota",
-  "Bacillota_B",
-    "Patescibacteria",
-    "Planctomycetota",
-    "Eremiobacterota",
-    "Gemmatimonadota",
-  "Other"
-  )
-phyla_colours <- ggsci::pal_d3(palette = 'category20', alpha=1)(20)[-4] %>% #remove red, not good w/ green
-  head(16) %>% c("grey50")
-phyla_colours[7] <- 'grey20' # change grey to black; was postion 8 but becomes 7 after removing red (4)
-phyla_colours_lines <- phyla_colours
-selected_phyla <- c(
-  "Acidobacteriota",
-  "Actinomycetota",
-  "Verrucomicrobiota",
-    "Pseudomonadota",
-  "Desulfobacterota",
-  "Dormibacterota",
-  "Bacteroidota",
-  "Chloroflexota",
-  "Nitrospirota",
-  "Myxococcota",
-  "Halobacteriota",
-  "Bacillota_B"
-  )
-
-mge_levels <- c("IS_Tn", "Phage", "CE", "Integron", "ambiguous")
-mge_colours <- ggsci::pal_npg()(4) %>% c('grey50')
-
-
-#################################
-### MGE proportions per phyla ###
-#################################
-
-### load clustering files
-read_recombinase_clustering <- function() {
-    d <- tribble(
-        ~cluster, ~filename,
-        "90_AAI", "90_AAI_cluster.tsv",
-        "100_AAI", "100_AAI_cluster.tsv"
-        ) %>%
-        mutate(
-            data = map(filename, ~ here(recombinase_clustering_directory, .) %>% read_tsv(col_names = c("representative", "contig")), show_col_types = FALSE),
-        ) %>%
-        select(-filename)
-    return(d)
-}
-recombinase_clustering <- read_recombinase_clustering()
-
-### load recombinase all info file
-read_recombinase_contig_info <- function() {
-    d <- read_tsv(here(recombinase_directory, "mge_recombinase.tsv"), show_col_types = FALSE)
-    return(d)
-}
-recombinase_contig_info <- read_recombinase_contig_info()
-
-### filtered contigs with length minimal length cutoff
-list_filtered_contigs <- function(recombinase_contig_info = read_recombinase_contig_info()) {
-    d <- recombinase_contig_info %>%
-        filter(contig_length >= contig_length_cutoff) %>%
-        select(contig) %>%
-        distinct() # there could be >1 rec in a contig
-    return(d)
-}
-filtered_contigs <- list_filtered_contigs(recombinase_contig_info)
-
-# load MGE contig tracking table
-read_mge_to_mags_checkm2 <- function() {
-    d <- read_tsv(here(v3_contig_tracking_directory, "mge_to_mags_checkm2.tsv"), show_col_types = FALSE)
-    return(d)
-}
-
-mge_to_mags_checkm2 <- read_mge_to_mags_checkm2()
-read_genome_info_checkm2 <- function() {
-    d <- bind_rows(
-            read_tsv(here(v2_mags_directory, "gtdbtk.bac120.summary.tsv"), show_col_types = FALSE),
-            read_tsv(here(v2_mags_directory, "gtdbtk.ar53.summary.tsv"), show_col_types = FALSE)
-            ) %>%
-        select(genome = user_genome, taxonomy = classification, red_value)
-    return(d)
-}
-
-genome_info_checkm2 <- read_genome_info_checkm2()
-taxonomy_checkm2 <- genome_info_checkm2 %>%
-  separate(taxonomy, sep = ";",
-    into = c("domain", "phylum", "class", "order", "family", "genus", "species")
-  ) %>%
-  select(-red_value)
+checkm2_report_f <- here::here("som-data/fig-data/emerge_mags_v2/checkm2_v1.0.2_quality_report.tsv")
 
 # load MAG cluster info
 read_mag_derep_clusters_checkm2 <- function() {
@@ -143,11 +200,6 @@ read_mag_derep_clusters_checkm2 <- function() {
 }
 
 mag_derep_clusters_checkm2 <- read_mag_derep_clusters_checkm2()
-clusters <- recombinase_clustering %>%
-  filter(cluster %in% c("100_AAI", "90_AAI")) %>%
-  unnest(data) %>%
-  pivot_wider(names_from = cluster, values_from = representative) %>%
-  rename(recombinase = contig, AAI_100 = `100_AAI`, AAI_90 = `90_AAI`)
 
 ### select only MAGs binned from contigs in samples used in this study
 ### filter redudant MAGs wihtin the same sample
@@ -175,165 +227,180 @@ mag_metadata_df <- mag_metadata_df_ori %>%
 
 mag2sample_df <- mag_metadata_df %>% select(MAG=mag_name, mag_sample=Sample)
 
-# contigs with CheckM2 MAG taxonomy
-mag_contigs <- recombinase_contig_info %>%
-     select(recombinase, origin2, contig, contig_length, mag, mag_lineage) %>%
-     filter(!is.na(mag) & contig_length >= contig_length_cutoff) %>%
-     separate(mag_lineage, sep=";", into = c("domain", "phylum", "class", "order", "family", "genus", "species"))
-
-
-type_proportions <- mag_contigs %>%
-  group_by(phylum, origin2) %>%
-  summarise(n = n()) %>%
-  mutate(prop = n / sum(n)) %>%
-  mutate(n_total = sum(n), prop_total =  sum(prop))
-
-phylum_species_counts <- mag_metadata_df %>%
-    separate(Classification, sep =';', into = c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species')) %>%
-    group_by(phylum) %>%
-    summarise(
-        n_species = unique(mag_cluster) %>% length(),
-        n_genomes = n()
-    )
-
-
-mag_mge_plot_data <- type_proportions %>%
-  left_join(phylum_species_counts) %>%
-  mutate(
-    phylum = str_remove(phylum, "p__"),
-    phylum = ifelse(phylum %in% selected_phyla, phylum, "other"),
-    phylum = factor(phylum, levels = phyla_levels),
-    origin2 = factor(origin2, levels = mge_levels),
-    per_genome = n / n_genomes,
-    per_genome_total = n_total / n_genomes
+df_mag_per_cluster <- read_tsv(rec_f, col_types = cols()) %>% 
+    rename(MAG = mag) %>%
+    filter(!is.na(MAG)) %>%
+    group_by(MAG) %>%
+    summarise(mge_per_cell = n()) %>% ungroup() %>%
+    right_join(
+        mag_derep_clusters_checkm2 %>% filter(genome %in% mag2sample_df$MAG), 
+        by=c('MAG'='genome')
     ) %>%
-  filter(phylum != "other")
-
-
-############
-# Fig.2.A
-############
-
-mag_mge_plot_data2 <- mag_mge_plot_data %>%
-  arrange(desc(per_genome_total)) %>%
-  mutate(phylum = as.character(phylum))
-
-phyla_levels2 <- unique(mag_mge_plot_data2$phylum)
-mag_mge_plot_data2$phylum <- factor(mag_mge_plot_data2$phylum, levels = phyla_levels2)
-
-mag_mge_plot <-
-  mag_mge_plot_data2 %>%
-  ggplot(aes(phylum, n)) +
-  geom_col(aes(fill = origin2)) +
-  geom_text(aes(y = n_total, label = per_genome_total %>% round(0)), size=9/.pt, hjust = 1.2, data = . %>% select(phylum, n_total, per_genome_total) %>% distinct()) +
-  coord_flip() +
-  scale_fill_manual("", breaks = mge_levels, values = mge_colours) +
-  scale_y_reverse(labels = c('0', '20K', '40K', '60K'), breaks = c(0, 2e+4, 4e+4, 6e+4), limits = c(0, 6e+4) %>% rev) +
-  scale_x_discrete(position = 'top') +
-  guides(fill=guide_legend(nrow = 2, byrow = T)) +
-  theme_classic() +
-  theme(legend.position = 'bottom') +
-  labs(x="", y="MGE recombinase number")
-
-############
-# Fig.2.B
-###########
-
-plot_alpha_diversity <- function(df, fileprefix, counting = contig, gcounting = n_species) {
-  alpha_diversity <- df %>%
-    group_by(origin2, phylum) %>%
-    nest() %>%
-    left_join(phylum_species_counts) %>%
-    mutate(
-      #richness = map_dbl(data, ~ .x %>% distinct({{counting}}) %>% nrow()), ### NOTE: changed by jiarong - delete
-      richness = map_dbl(data, ~ .x %>% nrow()),
-      phylum = str_remove(phylum, "p__"),
-      phylum = ifelse(phylum %in% phyla_levels, phylum, "other"),
-      #phylum = factor(phylum, levels = phyla_levels),
-      phylum = factor(phylum, levels = phyla_levels2),
-      origin2 = factor(origin2, levels = mge_levels)
-      #origin2 = factor(origin2, levels = mge_levels %>% rev)
-      ) %>%
-    group_by(origin2, phylum) %>%
-    summarise(
-      n_species = sum({{gcounting}}),
-      richness = sum(richness)
-      ) %>%
-    ungroup() %>%
-    mutate(
-      richness_per_species = richness / n_species,
-      ) %>%
-    complete(origin2, phylum, fill = list(richness = 0, richness_per_species = 0)) %>%
-    filter(phylum != "other")
-  tile_layers <- list(
-    geom_tile(),
-    #xlab("MGE type"),
-    #ylab("Phylum"),
-    labs(x=element_blank(), y=element_blank()),
-    theme_classic()
-    #cowplot::theme_cowplot()
-  )
-
-  max_richness = alpha_diversity %>% pull(richness_per_species) %>% max() %>% round(0)
-  second_richness = alpha_diversity %>% arrange(desc(richness_per_species)) %>% slice(2) %>% pull(richness_per_species)
-
-  base_plot <- alpha_diversity %>%
-    ggplot(aes(origin2, phylum, fill = richness_per_species)) +
-    tile_layers +
-    scale_fill_distiller("MGE recombinase \nper genome", palette = "YlGn", direction = 1, breaks=c(0, 10, 20, 30), limits = c(0, max_richness+1)) +
-    #scale_fill_distiller('', palette = "YlGn", direction = 1) +
-    #guides(fill = guide_legend(title.position = 'bottom')) +
-    guides(x=guide_axis(angle=45), fill=guide_colorbar(title.position = 'top', frame.colour = 'black', ticks.colour = 'black'))
-
-
-  trunc_plot <- alpha_diversity %>%
-    mutate(richness_per_species = ifelse(richness_per_species == max(richness_per_species), second_richness, richness_per_species)) %>%
-    ggplot(aes(origin2, phylum, fill = richness_per_species)) +
-    tile_layers +
-    geom_text(aes(x = "IS_Tn", y = "Nitrospirota", label = {{max_richness}}), size = 3) +
-    scale_fill_distiller("recombinase clusters \nper species", palette = "YlGn", direction = 1)
-  return(base_plot)
-}
-
-alpha_per_genomes_plot <- mag_contigs %>% 
-    plot_alpha_diversity("mag", gcounting = n_genomes) + 
-    theme(
-      legend.position = "bottom",
-      legend.justification = "centre",
-      axis.title.y = element_blank(),
-      axis.text.y = element_blank(),
-      legend.key.height = unit(10, 'pt')
-      )
-
-
-############
-# Fig.2.C
-###########
-average_mge_per_genome <- (mag_contigs %>% count() %>% pull(n)) / (phylum_species_counts %>% summarise(n_genomes = sum(n_genomes)) %>% pull(n_genomes))
-genomes_comp_plot <- mag_contigs %>%
-  count(phylum) %>%
-  left_join(phylum_species_counts) %>%
-  mutate(
-    phylum = str_remove(phylum, "p__"),
-    phylum = ifelse(phylum %in% phyla_levels, phylum, "Other")
+    left_join(
+        read_tsv(checkm2_report_f, col_types = cols()) %>% select(MAG=Name, completeness=Completeness, contamination=Contamination),
+        by = c('MAG')
     ) %>%
-  mutate(phylum != 'Other') %>%
-  ggplot(aes(n_genomes, n, colour = phylum, label = phylum)) +
-  geom_abline(slope = average_mge_per_genome, intercept = 0, linetype = "dashed") +
-  geom_point() +
-  ggrepel::geom_text_repel(size = 9/.pt, data = . %>% filter(phylum != "Other"), force = 3, force_pull = 0.5, min.segment.length = 0.2) +
-  scale_color_manual(values = phyla_colours_lines, breaks = phyla_levels, guide = "none") +
-  #scale_x_continuous(labels = scales::unit_format(unit='K', scale = 1e-3)) +
-  #scale_y_continuous(labels = scales::unit_format(unit='K', scale = 1e-3)) +
-  scale_x_continuous(labels = c('0', '0.5K', '1K', '1.5K'), breaks = c(0, 0.5e+3, 1e+3, 1.5e+3), limits = c(0, 1.8e+3)) +
-  scale_y_continuous(labels = c('0', '20K', '40K', '60K'), breaks = c(0, 2e+4, 4e+4, 6e+4), limits = c(0, 6e+4)) +
-  xlab("Genome number") +
-  ylab("MGE recombinase number") +
-  theme_classic()
+    mutate(mge_per_cell = mge_per_cell * 100/completeness) %>%
+    mutate(mge_per_cell=if_else(is.na(mge_per_cell), 0, mge_per_cell)) %>%
+    mutate(source='mag') %>%
+    select(source, mge_per_cell)
 
 
-p <- mag_mge_plot + alpha_per_genomes_plot + genomes_comp_plot + plot_layout(widths = c(3.4, 1.8, 2)) + plot_annotation(tag_levels = 'A')
-figdir <- here('fig.outdir')
+###
+#  khedkar dataset
+###
+
+khedkar_rec_per_genome_f <- here("som-data", "fig-data", "khedkar_data", "mge_bins_per_genome_final.txt.gz")
+
+df_khedkar <- read_tsv(khedkar_rec_per_genome_f, col_types = cols()) %>% 
+    select(-Hotspot, -Cellular) %>% 
+    mutate(mge_per_cell = rowSums(across(where(is.numeric)))) %>%
+    mutate(source = 'khedkar et al.') %>%
+    select(source, mge_per_cell)
+
+
+df_add_scg8 <- df_add_scg %>% 
+    group_by(Sample) %>% summarise(mge_cnt=sum(mge_cnt), scg_cnt=mean(scg_cnt)) %>% # each MGE orign per sample are in different rows so need sum(mge_cnt), scg has already been summed
+    filter(scg_cnt >=5) %>%  # NOTE: require at least 5 single copy core gene since low sequencing depth samples are not reliable
+    mutate(mge_per_cell=mge_cnt/scg_cnt) %>%
+    mutate(source='contig') %>%
+    select(source, mge_per_cell) %>%
+    bind_rows(df_mag_per_cluster, df_khedkar) %>%
+    mutate(source=factor(source, levels=c('contig', 'mag', 'khedkar et al.')))
+
+
+# show the stats needed for main text
+tapply(df_add_scg8$mge_per_cell, df_add_scg8$source, summary)
+
+my_comparisons <- list(c("contig", "mag"), c("mag", "khedkar et al."), c("contig", "khedkar et al."))
+options(repr.plot.width=3, repr.plot.height=2.3, repr.plot.res=300)
+gg <- (ggplot(data=df_add_scg8, aes(x=source, y=mge_per_cell)) 
+       + geom_boxplot(outlier.size = 0.8, outlier.alpha = 0.6) 
+       + geom_hline(yintercept = 26, color='red', linetype='dashed')
+       #+ ggpubr::stat_compare_means(aes(label = after_stat(p.signif)), comparisons = my_comparisons, vjust = 0.5)
+       + theme_classic()
+       + scale_x_discrete(labels=c('Stordalen\nMire\ncontig', 'Stordalen\nMire\nMAG', 'Isolate\ngenome\nKhedkar et al.'))
+       + scale_y_continuous(breaks = c(0, 10, 100, 1000), trans = scales::pseudo_log_trans(base = 10))
+       + annotation_logticks(sides = 'l')
+       + labs(x='', y='MGE recombinases\nper genome')
+       )
+
+fig2e <- gg
+
+
+########
+# Fig.2.F
+########
+
+# short vs. hybrid MAG to get short read MAG rec recovery rate
+
+rec_allinfo_f <- 'som-data/fig-data/short_vs_long/recombinase.allinfo.add_mag.tsv'
+long_vs_short_f <- 'som-data/fig-data/short_vs_long/long_read_comparison_genomes.tsv'
+mapping_info_f <- 'som-data/fig-data/short_vs_long/gene_mapping.allinfo.final.add_longonly.tsv'
+
+
+old_taxon_vec <- c('Actinobacteriota')
+old2new_taxon <- c('Actinomycetota')
+names(old2new_taxon) <- old_taxon_vec
+
+df_taxa <- read_tsv(mapping_info_f, col_types = cols()) %>%
+    dplyr::select(name=genome, classification) %>%
+    dplyr::distinct() %>%
+    tidyr::separate(classification, sep = ';', into = c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species')) %>%
+    dplyr::mutate(phylum = stringr::str_remove(phylum, pattern = 'p__')) %>%
+    dplyr::mutate(phylum = if_else(phylum %in% old_taxon_vec, old2new_taxon[phylum], phylum))
+
+
+df_taxa$color <- color_pal[df_taxa$phylum]
+
+df_mag <- read_tsv(long_vs_short_f, col_types = cols()) %>%
+    dplyr::mutate(mag_idx=sprintf('MAG%02d', row_number())) %>%
+    dplyr::left_join(df_taxa, by = c('name')) %>%
+    dplyr::group_by(phylum) %>%
+    dplyr::arrange(mag_idx, .by_group = T) %>%
+    dplyr::mutate(phylum_idx = row_number()) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(mag_idx2=stringr::str_c(mag_idx, '|', phylum, phylum_idx)) %>%
+    dplyr::mutate(mag_idx2=stringr::str_c('<span style = \"color:', color, '\">', mag_idx2, '</span>', sep=' '))
+
+#df_mag %>% write_tsv(file = 'som-data/fig-data/short_vs_long/17mag/long_read_comparison_genomes.add_new_name.tsv')
+
+df_rec <- read_tsv(rec_allinfo_f, col_types = cols()) %>%
+    dplyr::select(recombinase, origin, OTU_100, OTU_90, mag) %>%
+    dplyr::mutate(origin=if_else(stringr::str_detect(origin, ";"), "Ambiguous", origin)) %>%
+    dplyr::filter(!is.na(mag)) %>%
+    dplyr::filter(mag %in% df_mag$name | mag %in% df_mag$name_short)
+
+
+color_pal2 <- ggsci::pal_uchicago(palette = 'default')(2)
+names(color_pal2) <- c('Short read\nrecovered', 'Short read\nmissed')
+
+gg <- df_mag %>% dplyr::select(name, name_short) %>%
+    dplyr::left_join(df_rec %>% select(name=mag, recombinase, origin, OTU_100) %>% tidyr::nest(.by=name, .key="data")) %>%
+    dplyr::left_join(df_rec %>% select(name_short=mag, recombinase, origin, OTU_100) %>% tidyr::nest(.by=name_short, .key="data_short")) %>%
+    tidyr::unnest(data) %>%
+    tidyr::nest(data=c(recombinase, OTU_100)) %>%
+    dplyr::mutate(data_short=map2(data_short, origin, \(x, y) x %>% dplyr::filter(origin==y))) %>%
+    dplyr::mutate(
+        shared=map2(data, data_short, \(x, y) length(intersect(x$OTU_100, y$OTU_100))),
+        long_only=map2(data, data_short, \(x, y) length(setdiff(x$OTU_100, y$OTU_100))),
+        short_only=map2(data, data_short, \(x, y) length(setdiff(y$OTU_100, x$OTU_100)))
+    ) %>%
+    dplyr::select(name, name_short, origin, shared, long_only, short_only) %>%
+    tidyr::unnest(c(shared, long_only, short_only)) %>%
+    dplyr::group_by(origin) %>% 
+    dplyr::summarize(shared=sum(shared), long_only=sum(long_only), short_only=sum(short_only)) %>%
+    #dplyr::mutate(recovery_rate=format(round(shared/(long_only+shared), 2), nsmall=2)) %>%
+    dplyr::mutate(recovery_rate=(short_only+shared)/(short_only+long_only+shared)) %>%
+    dplyr::mutate(recovery_rate=scales::percent(recovery_rate, accuracy = 1L)) %>%
+    dplyr::mutate(rec_total = short_only+long_only+shared) %>%
+    dplyr::arrange(desc(rec_total)) %>%
+    dplyr::mutate(origin = factor(origin, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
+    #dplyr::mutate(origin = stringr::str_c(recovery_rate, origin, sep = ' | ')) %>%
+    tidyr::pivot_longer(cols = c('shared', 'long_only', 'short_only'), names_to = 'groups', values_to = 'values') %>%
+    dplyr::mutate(groups=if_else(groups=='long_only', 'Short read\nmissed', groups)) %>%
+    dplyr::mutate(groups=if_else(groups=='shared' | groups=='short_only', 'Short read\nrecovered', groups)) %>%
+    #dplyr::mutate(recovery_rate = if_else(groups=='long_only', recovery_rate, NA)) %>%
+    dplyr::filter(origin!='Ambiguous') %>%
+    dplyr::filter(origin!='Integron') %>%
+    ggplot(aes(y=values, x=origin, fill=groups)) + geom_col() + scale_fill_manual(name='', values = color_pal2) + theme_classic() +
+        geom_text(aes(label = recovery_rate, y=rec_total), vjust=-0.2, size=3) +
+        ylim(c(0, 500)) +
+        guides(fill=guide_legend(nrow = 2, reverse = F)) +
+        theme(legend.title=element_blank(), legend.position='bottom', 
+              legend.box.spacing = unit(0, 'pt'), legend.margin = margin(0,0,0,0), legend.key.size = unit(8, 'pt')) + 
+        labs(y='Unique MGE\nrecombinases', x='')
+
+
+leg <- cowplot::get_legend(gg)
+gg2 <- gg + theme(legend.position='none')
+gg3 <- gg2 + inset_element(leg, 0.6, 0.8, 0.75, 0.99, align_to = 'panel', clip=T, ignore_tag = T)
+
+fig2f <- gg3
+
+layout <- "
+AAA
+CBE
+DBF
+"
+
+gg <- ggplot() + theme_void()
+
+
+fig2b.leg <- ggpubr::as_ggplot(ggpubr::get_legend(fig2b))
+fig2b.wo_leg <- fig2b & theme(legend.position = 'none') & labs(tag = '')
+fig2b.new <- wrap_elements(panel=fig2b.leg) / fig2b.wo_leg + plot_layout(heights = c(1,4))
+
+p <- gg + 
+    fig2b.new +
+    wrap_elements(full=fig2c) + 
+    fig2d +  fig2e + (fig2f & labs(tag = 'F', y='Unique MGE\nrecombinases')) + 
+    plot_layout(design=layout, heights = c(1.5,0.6,0.4), widths = c(1,1,1.4)) + 
+    plot_annotation(tag_levels = list(c('A', 'D', '', 'B', 'C', 'E', 'F')))
+
+figdir <- here::here('fig.outdir')
 dir.create(figdir)
-figfile <- here(figdir, 'fig.2.host_lineage.pdf')
-ggsave(figfile, p, width = 7.2, height = 4, dpi = 300, device = 'pdf')
+figfile <- here::here(figdir, 'Fig.2.rec_overview.pdf')
+ggsave(figfile, p, width = 7.2, height = 7, dpi = 300, device = 'pdf')
+#figfile <- here::here(figdir, 'Fig.2.rec_overview.png')
+#ggsave(figfile, p, width = 7.2, height = 7, dpi = 300, device = 'png')

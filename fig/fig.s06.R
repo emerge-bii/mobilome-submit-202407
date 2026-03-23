@@ -1,13 +1,14 @@
 source(here::here('setup.R'))
 
 ###
-# fig.S6.A
+# fig.S4.A
 ###
 
 tab_f <- 'som-data/fig-data/short_vs_long/long_vs_short.tsv'
 allinfo_tab <- 'som-data/fig-data/short_vs_long/gene_mapping.allinfo.final.add_longonly.tsv'
 
 mge_levels <- c('IS_Tn', 'Phage', 'CE', 'Integron', 'Ambiguous')
+
 phyla_levels <- c(
   "Acidobacteriota",
   "Actinomycetota",
@@ -25,9 +26,9 @@ phyla_levels <- c(
   "Other"
   )
 
+
 phyla_colours <- ggsci::pal_d3(palette = 'category20', alpha=1)(15)[-4] %>% #remove red, not good w/ green
   head(13) %>% c("grey10")
-
 phyla_colours[7] <- 'grey20' # change grey to black
 names(phyla_colours) <- phyla_levels
 color_pal <- phyla_colours
@@ -51,6 +52,7 @@ df <- df %>% left_join(df_info, by = c('name'='genome')) %>%
     dplyr::filter(origin!='Ambiguous') %>%
     dplyr::filter(origin!='Integron')
 
+
 options(repr.plot.width=4.2, repr.plot.height=2.8, repr.plot.res=300)
 gg <- (ggplot(df, aes(x=n_long, y=n_short, color=phylum)) 
        + geom_abline(linetype='dashed')
@@ -60,7 +62,7 @@ gg <- (ggplot(df, aes(x=n_long, y=n_short, color=phylum))
        + guides(color=guide_legend(nrow = 3))
        + theme_classic()
        + theme(legend.text = element_text(size=8), legend.position = 'bottom', legend.box.spacing = unit(0, 'pt'), legend.margin = margin(0,0.2,0,0))
-       + labs(x='MGE recombinase number in hybrid MAG', y='MGE recombinase number\nin short read MAG')
+       + labs(x='MGE recombinase number in hybrid MAG', y='MGE recombinase\nnumber in short read MAG')
        )
 
 fig2a <- gg
@@ -70,177 +72,156 @@ gg_inset <- (ggplot(df %>% filter(origin=='CE'), aes(x=n_long, y=n_short, color=
        + geom_point()
        + scale_color_manual(name='', values = color_pal, guide='none')
        + theme_classic()
-       + labs(x='', y='')
-             + theme(plot.margin = margin(0,0,0,0))
+       + labs(x=NULL, y=NULL, title=NULL)
+       + theme(plot.margin = margin(0,0,0,0))
        )
 
-fig2a <- fig2a + inset_element(gg_inset, 0.75, 0.01, 0.99, 0.99, align_to = 'panel', clip =T, ignore_tag = T)
-fig.s4.a <- wrap_elements(full=fig2a)
+fig2a <- fig2a + inset_element(gg_inset, 0.72, 0.01, 0.99, 0.99, align_to = 'panel', clip =T, ignore_tag = T)
+fig2a <- wrap_elements(full=fig2a)
 
 
 ###
-# fig.S6.B
+# fig.S4.C
 ###
 
-gene_f <- 'som-data/fig-data/short_vs_long/gene_mapping.allinfo.final.add_longonly.tsv'
+### host centric view
 
-df_gene <- read_tsv(gene_f, col_types=cols()) %>%
-    dplyr::mutate(long_only=if_else(long_only==TRUE, 'missed', 'covered')) %>%
-    tidyr::separate(classification, into = c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species'), sep=';') %>%
-    dplyr::mutate(genome = stringr::str_c(genome, phylum, sep='\n'))
+rec_allinfo_f <- 'som-data/fig-data/short_vs_long/recombinase.allinfo.add_mag.tsv'
+long_vs_short_f <- 'som-data/fig-data/short_vs_long/long_read_comparison_genomes.tsv'
+mapping_info_f <- 'som-data/fig-data/short_vs_long/gene_mapping.allinfo.final.add_longonly.tsv'
 
-df_gene2 <- df_gene %>% 
-    dplyr::mutate(long_only=if_else(long_only=='missed' & breadth_cov_contig_sheared_sr_100ani >=1, stringr::str_c('missed', 'binning', sep='\n'), if_else(long_only=='missed', stringr::str_c('missed', 'assembly', sep='\n'), long_only)))
-
-mag_f <- 'som-data/fig-data/short_vs_long/long_read_comparison_genomes.add_new_name.tsv'
-mag_df <- read_tsv(file = mag_f, col_types = cols()) %>%
-    mutate(new_name = stringr::str_c(phylum, phylum_idx, sep = ''))
-
-mag_name <- 'cmr6.MA.201907_S_1_20to24_24'
-mag_name_new <- mag_df  %>% filter(name == mag_name) %>% pull(new_name)
-
-options(repr.plot.width=7.2, repr.plot.height=2, repr.plot.res=300)
-comp <- list(c('covered', 'missed\nassembly'))
-gg1 <- df_gene2 %>% dplyr::filter(stringr::str_detect(genome, pattern = mag_name)) %>% dplyr::select(OTU_90, long_only, origin2) %>% 
-    dplyr::group_by(OTU_90) %>% 
-    summarise(n=n(), long_only=stringr::str_c(unique(long_only), ';'), n_long_only=map_int(unique(long_only), length), origin2=stringr::str_c(unique(origin2), ';'), n_origin2=lengths(origin2)) %>%
-    #dplyr::filter(n_long_only>1 | n_origin2 >1) #%>%
-    mutate(long_only=str_remove_all(long_only, ';'), origin2=str_remove_all(origin2, ';')) %>%
-    filter(origin2 %in% c('IS_Tn', 'Phage', 'CE')) %>%
-    mutate(origin2 = factor(origin2, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
-    ggplot(aes(x=long_only, y=n)) + 
-    geom_boxplot(outlier.size = 0.5, outlier.alpha = 0.5) + 
-    geom_hline(yintercept = 1, linetype='dashed', color='red') + 
-    facet_wrap(~origin2, nrow = 1) + 
-    #ggpubr::stat_compare_means(label = 'p.format', vjust = 1) + 
-    #ggpubr::stat_compare_means(ref.group = 'covered', label = 'p.signif', hide.ns = T, vjust = 1) + 
-    ggpubr::stat_compare_means(comparisons = comp, label = 'p.signif', hide.ns=F, vjust=1.1) + 
-    labs(x='', y='Copy number (90% ANI)', title = mag_name_new) +
-    theme_classic()
-
-options(repr.plot.width=3, repr.plot.height=2, repr.plot.res=300)
-gg2 <- df_gene2 %>% dplyr::filter(stringr::str_detect(genome, pattern = 'cmr6.MA.201907_S_1_20to24_24')) %>% dplyr::select(OTU_90, long_only, origin2) %>% 
-    dplyr::group_by(OTU_90) %>% 
-    summarise(n=n(), long_only=stringr::str_c(unique(long_only), ';'), n_long_only=map_int(unique(long_only), length), origin2=stringr::str_c(unique(origin2), ';'), n_origin2=lengths(origin2)) %>%
-    mutate(long_only=str_remove_all(long_only, ';'), origin2=str_remove_all(origin2, ';')) %>%
-    filter(origin2 %in% c('IS_Tn', 'Phage', 'CE', 'Integron')) %>%
-    mutate(origin2 = factor(origin2, levels = c('IS_Tn', 'Phage', 'CE'))) %>%
-    ggplot(aes(x=long_only, y=n)) + geom_boxplot() + 
-    geom_hline(yintercept = 1, linetype='dashed', color='red') + 
-    ggpubr::stat_compare_means(label='p.format', vjust = 1) + 
-    labs(x='', y='Copy number (90% ANI)', title = mag_name_new) + 
-    theme_classic()
-
-options(repr.plot.width=7.2, repr.plot.height=2, repr.plot.res=300)
-gg <- gg2 + gg1 + plot_layout(widths = c(1,4))
-
-fig.s4.b <- gg1
+df_taxa <- read_tsv(mapping_info_f, col_types = cols()) %>%
+    dplyr::select(name=genome, classification) %>%
+    dplyr::distinct() %>%
+    tidyr::separate(classification, sep = ';', into = c('domain', 'phylum', 'class', 'order', 'family', 'genus', 'species')) %>%
+    dplyr::mutate(phylum = stringr::str_remove(phylum, pattern = 'p__')) %>%
+    dplyr::mutate(phylum = if_else(phylum %in% old_taxon_vec, old2new_taxon[phylum], phylum))
 
 
-###
-# fig.S6.C
-###
+df_taxa$color <- color_pal[df_taxa$phylum]
 
-#cmr6.MA.201907_P_1_20to24_50
+df_mag <- read_tsv(long_vs_short_f, col_types = cols()) %>%
+    dplyr::mutate(mag_idx=sprintf('MAG%02d', row_number())) %>%
+    dplyr::left_join(df_taxa, by = c('name')) %>%
+    dplyr::group_by(phylum) %>%
+    dplyr::arrange(mag_idx, .by_group = T) %>%
+    dplyr::mutate(phylum_idx = row_number()) %>%
+    dplyr::ungroup() %>%
+    dplyr::mutate(mag_idx2=stringr::str_c(mag_idx, '|', phylum, phylum_idx)) %>%
+    dplyr::mutate(mag_idx2=stringr::str_c('<span style = \"color:', color, '\">', mag_idx2, '</span>', sep=' '))
 
-mag_name <- 'cmr6.MA.201907_P_1_20to24_50'
-mag_name_new <- mag_df  %>% filter(name == mag_name) %>% pull(new_name)
+#df_mag %>% write_tsv(file = 'som-data/fig-data/short_vs_long/long_read_comparison_genomes.add_new_name.tsv')
 
-options(repr.plot.width=7.2, repr.plot.height=2, repr.plot.res=300)
-gg1 <- df_gene2 %>% dplyr::filter(stringr::str_detect(genome, pattern = 'cmr6.MA.201907_P_1_20to24_50')) %>% dplyr::select(OTU_90, long_only, origin2) %>% 
-    dplyr::group_by(OTU_90) %>% 
-    summarise(n=n(), long_only=stringr::str_c(unique(long_only), ';'), n_long_only=map_int(unique(long_only), length), origin2=stringr::str_c(unique(origin2), ';'), n_origin2=lengths(origin2)) %>%
-    #dplyr::filter(n_long_only>1 | n_origin2 >1) #%>%
-    mutate(long_only=str_remove_all(long_only, ';'), origin2=str_remove_all(origin2, ';')) %>%
-    filter(origin2 %in% c('IS_Tn', 'Phage', 'CE')) %>%
-    mutate(origin2 = factor(origin2, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
-    ggplot(aes(x=long_only, y=n)) + 
-    geom_boxplot(outlier.size = 0.5, outlier.alpha = 0.5) + 
-    geom_hline(yintercept = 1, linetype='dashed', color='red') + 
-    facet_wrap(~origin2) + 
-    #ggpubr::stat_compare_means(label='p.format', vjust = 1) + 
-    #ggpubr::stat_compare_means(label='p.signif', vjust = 1, ref.group = 'covered', hide.ns = T) +
-    ggpubr::stat_compare_means(comparisons = comp, label = 'p.signif', hide.ns=F, vjust=1.1) + 
-    labs(x='', y='Copy number (90% ANI)', title=mag_name_new) + 
-    theme_classic()
+df_rec <- read_tsv(rec_allinfo_f, col_types = cols()) %>%
+    dplyr::select(recombinase, origin, OTU_100, OTU_90, mag) %>%
+    dplyr::mutate(origin=if_else(stringr::str_detect(origin, ";"), "Ambiguous", origin)) %>%
+    dplyr::filter(!is.na(mag)) %>%
+    dplyr::filter(mag %in% df_mag$name | mag %in% df_mag$name_short)
 
-options(repr.plot.width=3, repr.plot.height=2, repr.plot.res=300)
-gg2 <- df_gene2 %>% dplyr::filter(stringr::str_detect(genome, pattern = 'cmr6.MA.201907_P_1_20to24_50')) %>% dplyr::select(OTU_90, long_only, origin2) %>% 
-    dplyr::group_by(OTU_90) %>% 
-    summarise(n=n(), long_only=stringr::str_c(unique(long_only), ';'), n_long_only=map_int(unique(long_only), length), origin2=stringr::str_c(unique(origin2), ';'), n_origin2=lengths(origin2)) %>%
-    #dplyr::filter(n_long_only>1 | n_origin2 >1) #%>%
-    mutate(long_only=str_remove_all(long_only, ';'), origin2=str_remove_all(origin2, ';')) %>%
-    filter(origin2 %in% c('IS_Tn', 'Phage', 'CE')) %>%
-    mutate(origin2 = factor(origin2, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
-    ggplot(aes(x=long_only, y=n)) + geom_boxplot() + geom_hline(yintercept = 1, linetype='dashed', color='red') + 
-    ggpubr::stat_compare_means(label='p.format', vjust = 1) + 
-    labs(x='', y='Copy number (90% ANI)', title=mag_name_new) + 
-    theme_classic()
 
-fig.s4.c <- gg1
+color_pal2 <- ggsci::pal_uchicago(palette = 'default')(2)
+names(color_pal2) <- c('Short read recovered', 'Short read missed')
 
+gg <- df_mag %>% dplyr::select(name, name_short) %>%
+    dplyr::left_join(df_rec %>% select(name=mag, recombinase, origin, OTU_100) %>% tidyr::nest(.by=name, .key="data")) %>%
+    dplyr::left_join(df_rec %>% select(name_short=mag, recombinase, origin, OTU_100) %>% tidyr::nest(.by=name_short, .key="data_short")) %>%
+    dplyr::mutate(
+        shared=map2(data, data_short, \(x, y) length(intersect(x$OTU_100, y$OTU_100))),
+        long_only=map2(data, data_short, \(x, y) length(setdiff(x$OTU_100, y$OTU_100))),
+        short_only=map2(data, data_short, \(x, y) length(setdiff(y$OTU_100, x$OTU_100)))
+    ) %>%
+    dplyr::select(name, name_short, shared, long_only, short_only) %>%
+    tidyr::unnest(c(shared, long_only, short_only)) %>%
+    #dplyr::mutate(recovery_rate=format(round(shared/(long_only+shared), 2), nsmall=2)) %>%
+    dplyr::mutate(recovery_rate=(short_only+shared)/(short_only+long_only+shared)) %>%
+    dplyr::mutate(recovery_rate=scales::percent(recovery_rate, accuracy = 1L)) %>%
+    dplyr::mutate(rec_total = short_only+long_only+shared) %>%
+    #dplyr::arrange(desc(recovery_rate)) %>%
+    dplyr::arrange(desc(rec_total)) %>%
+    dplyr::left_join(df_mag %>% select(name, mag_idx, mag_idx2)) %>%
+    #dplyr::mutate(name = stringr::str_c(recovery_rate, mag_idx, sep = ' | ')) %>%
+    dplyr::mutate(name = mag_idx2) %>%
+    dplyr::mutate(name = factor(name, levels=unique(name))) %>%
+    tidyr::pivot_longer(cols = c('shared', 'long_only', 'short_only'), names_to = 'groups', values_to = 'values') %>%
+    #dplyr::mutate(groups=if_else(groups=='long_only', 'hybrid_only', groups)) %>%
+    dplyr::mutate(groups=if_else(groups=='long_only', 'Short read missed', groups)) %>%
+    dplyr::mutate(groups=if_else(groups=='shared' | groups=='short_only', 'Short read recovered', groups)) %>%
+    #dplyr::mutate(recovery_rate = if_else(groups=='long_only', recovery_rate, NA)) %>%
+    ggplot(aes(y=values, x=name, fill=groups)) + geom_col() + scale_fill_manual(values = color_pal2, guide='none') + 
+        geom_text(aes(y=rec_total, label = recovery_rate), vjust=-0.2, size=3) +
+        theme_classic() + theme(axis.text.x=ggtext::element_markdown(angle = 45, hjust = 1, vjust = 1), legend.title=element_blank()) + 
+        ylim(0, 200) +
+        labs(y='Unique recombinases', x='Individual short read - hybrid MAG pair')
+
+
+options(repr.plot.width=6, repr.plot.height=2.5, repr.plot.res=300)
+x_labs <- ggplot_build(gg)$layout$panel_params[[1]]$x$get_labels()
+x_labs_new <- stringr::str_remove(x_labs, pattern = regex('MAG[0-9]+\\|'))
+
+gg <- gg + scale_x_discrete(labels=x_labs_new)
+fig2c <- gg
 
 
 ###
-# fig.S6.D
+# fig.S4.B
 ###
 
+### recombinsase type centric view
 
-# cmr6.MA.201907_E_1_20to24_66
+gg <- df_mag %>% dplyr::select(name, name_short) %>%
+    dplyr::left_join(df_rec %>% select(name=mag, recombinase, origin, OTU_100) %>% tidyr::nest(.by=name, .key="data")) %>%
+    dplyr::left_join(df_rec %>% select(name_short=mag, recombinase, origin, OTU_100) %>% tidyr::nest(.by=name_short, .key="data_short")) %>%
+    tidyr::unnest(data) %>%
+    tidyr::nest(data=c(recombinase, OTU_100)) %>%
+    dplyr::mutate(data_short=map2(data_short, origin, \(x, y) x %>% dplyr::filter(origin==y))) %>%
+    dplyr::mutate(
+        shared=map2(data, data_short, \(x, y) length(intersect(x$OTU_100, y$OTU_100))),
+        long_only=map2(data, data_short, \(x, y) length(setdiff(x$OTU_100, y$OTU_100))),
+        short_only=map2(data, data_short, \(x, y) length(setdiff(y$OTU_100, x$OTU_100)))
+    ) %>%
+    dplyr::select(name, name_short, origin, shared, long_only, short_only) %>%
+    tidyr::unnest(c(shared, long_only, short_only)) %>%
+    dplyr::group_by(origin) %>% 
+    dplyr::summarize(shared=sum(shared), long_only=sum(long_only), short_only=sum(short_only)) %>%
+    #dplyr::mutate(recovery_rate=format(round(shared/(long_only+shared), 2), nsmall=2)) %>%
+    dplyr::mutate(recovery_rate=(short_only+shared)/(short_only+long_only+shared)) %>%
+    dplyr::mutate(recovery_rate=scales::percent(recovery_rate, accuracy = 1L)) %>%
+    dplyr::mutate(rec_total = short_only+long_only+shared) %>%
+    dplyr::arrange(desc(rec_total)) %>%
+    dplyr::mutate(origin = factor(origin, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
+    #dplyr::mutate(origin = stringr::str_c(recovery_rate, origin, sep = ' | ')) %>%
+    tidyr::pivot_longer(cols = c('shared', 'long_only', 'short_only'), names_to = 'groups', values_to = 'values') %>%
+    dplyr::mutate(groups=if_else(groups=='long_only', 'Short read missed', groups)) %>%
+    dplyr::mutate(groups=if_else(groups=='shared' | groups=='short_only', 'Short read recovered', groups)) %>%
+    #dplyr::mutate(recovery_rate = if_else(groups=='long_only', recovery_rate, NA)) %>%
+    dplyr::filter(origin!='Ambiguous') %>%
+    dplyr::filter(origin!='Integron') %>%
+    ggplot(aes(y=values, x=origin, fill=groups)) + geom_col() + scale_fill_manual(name='', values = color_pal2) + theme_classic() +
+        geom_text(aes(label = recovery_rate, y=rec_total), vjust=-0.2, size=3) +
+        ylim(c(0, 500)) +
+        guides(fill=guide_legend(nrow = 2, reverse = F)) +
+        theme(legend.title=element_blank(), legend.position='bottom', legend.box.spacing = unit(0, 'pt'), legend.margin = margin(0,0,0,0)) + 
+        labs(y='Unique recombinases', x='')
 
-mag_name <- 'cmr6.MA.201907_E_1_20to24_66'
-mag_name_new <- mag_df  %>% filter(name == mag_name) %>% pull(new_name)
-
-options(repr.plot.width=7.2, repr.plot.height=2, repr.plot.res=300)
-gg1 <- df_gene2 %>% dplyr::filter(stringr::str_detect(genome, pattern = 'cmr6.MA.201907_E_1_20to24_66')) %>% dplyr::select(OTU_90, long_only, origin2) %>% 
-    dplyr::group_by(OTU_90) %>% 
-    summarise(n=n(), long_only=stringr::str_c(unique(long_only), ';'), n_long_only=map_int(unique(long_only), length), origin2=stringr::str_c(unique(origin2), ';'), n_origin2=lengths(origin2)) %>%
-    #dplyr::filter(n_long_only>1 | n_origin2 >1) #%>%
-    mutate(long_only=str_remove_all(long_only, ';'), origin2=str_remove_all(origin2, ';')) %>%
-    filter(origin2 %in% c('IS_Tn', 'Phage', 'CE')) %>%
-    mutate(origin2 = factor(origin2, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
-    ggplot(aes(x=long_only, y=n)) + 
-    geom_boxplot(outlier.size = 0.5, outlier.alpha = 0.5) + 
-    geom_hline(yintercept = 1, linetype='dashed', color='red') + 
-    facet_wrap(~origin2, ncol = 1) + 
-    #ggpubr::stat_compare_means(label='p.format', vjust=1) + 
-    #ggpubr::stat_compare_means(label='p.signif', vjust = 1, ref.group = 'covered', hide.ns = T) +
-    ggpubr::stat_compare_means(comparisons = comp, label = 'p.signif', hide.ns=F, vjust=1.1) + 
-    labs(x='', y='Copy number (90% ANI)', title = mag_name_new) + 
-    theme_classic()
-
-
-options(repr.plot.width=3, repr.plot.height=2, repr.plot.res=300)
-gg2 <- df_gene2 %>% dplyr::filter(stringr::str_detect(genome, pattern = 'cmr6.MA.201907_E_1_20to24_66')) %>% dplyr::select(OTU_90, long_only, origin2) %>% 
-    dplyr::group_by(OTU_90) %>% 
-    summarise(n=n(), long_only=stringr::str_c(unique(long_only), ';'), n_long_only=map_int(unique(long_only), length), origin2=stringr::str_c(unique(origin2), ';'), n_origin2=lengths(origin2)) %>%
-    #dplyr::filter(n_long_only>1 | n_origin2 >1) #%>%
-    mutate(long_only=str_remove_all(long_only, ';'), origin2=str_remove_all(origin2, ';')) %>%
-    filter(origin2 %in% c('IS_Tn', 'Phage', 'CE')) %>%
-    mutate(origin2 = factor(origin2, levels = c('IS_Tn', 'Phage', 'CE', 'Integron'))) %>%
-    ggplot(aes(x=long_only, y=n)) + geom_boxplot() + geom_hline(yintercept = 1, linetype='dashed', color='red') + 
-    ggpubr::stat_compare_means(label='p.format', vjust=1) + 
-    labs(x='', y='Copy number (90% ANI)') + 
-    theme_classic()
-
-
-fig.s4.d <- gg1
+fig2b <- gg
 
 
 options(repr.plot.width=7.2, repr.plot.height=7.5, repr.plot.res=300)
 layout <- '
-AD
-BB
-CC
+AA
+BC
+DD
 '
 
-p <- fig.s4.a + fig.s4.b + fig.s4.c + fig.s4.d + plot_layout(design = layout, widths = c(4.5, 2.5), heights = c(3, 2, 2)) + plot_annotation(tag_levels = 'A')
+fig2d <- ggplot() + theme_void() + cowplot::draw_text('TODO: add flowchart')
+
+p <- fig2d + fig2a + fig2b + fig2c + fig2d + plot_layout(design = layout, widths = c(5.4,1.8), heights = c(2.5,2.7,2.3)) + plot_annotation(tag_levels = 'A')
 
 figdir <- here::here('fig.outdir')
 dir.create(figdir)
 
-figfile <- here::here(figdir, 'fig.s06.short_vs_hybrid.example.pdf')
-ggsave(figfile, p, width = 7.2, height = 7.5, dpi=300, device = 'pdf')
+figfile <- here::here(figdir, 'fig.s04.long_vs_short.17mag.pdf')
+ggsave(figfile, p, width = 7.2, height = 7, dpi = 300, device = 'pdf')
 
-#figfile <- here::here(figdir, 'fig.s06.short_vs_hybrid.example.png')
-#ggsave(figfile, p, width = 7.2, height = 7.5, dpi=300, device = 'png')
+#figfile <- here::here(figdir, 'fig.s04.long_vs_short.17mag.png')
+#ggsave(figfile, p, width = 7.2, height = 7, dpi = 300, device = 'png')

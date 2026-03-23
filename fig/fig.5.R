@@ -3,7 +3,7 @@ source(here::here('setup.R'))
 
 setwd('som-data/fig-data')
 #############
-# Fig.4.A
+# Fig.5.A
 ############
 
 allinfo_tab <- '../metat.gene_cnt.tsv'
@@ -95,7 +95,7 @@ df_rec <- df2 %>% dplyr::mutate(anno2=if_else(ko %in% rp_gene_vec, 'RP',
 df_rec_pivot_long <- df_rec %>%
     tidyr::pivot_longer(cols=c('ratio', 'norm_ratio', 'norm_cnt_metat'), names_to = 'name', values_to='value')
 
-### fig6A
+### fig5A
 gg_a2 <- (ggplot(data=df_rec_pivot_long %>% filter(name %in% c('ratio') & (!stringr::str_detect(anno2, regex('lexA|recA', ignore_case=F)))) %>% mutate(anno2=factor(anno2, levels=c(df_tmp2$anno %>% rev))), 
                  aes(x=anno2, y=value, fill=anno2))
        + geom_boxplot(outlier.size = 0.8, outlier.shape = 21, outlier.alpha = 0.6)
@@ -107,21 +107,21 @@ gg_a2 <- (ggplot(data=df_rec_pivot_long %>% filter(name %in% c('ratio') & (!stri
        + annotation_logticks(sides='l')
        + theme(axis.text.x = element_text(angle = 45, hjust=1, vjust=1))
        )
-fig6a1 <- gg_a1
-fig6a2 <- gg_a2
-fig6a <- gg_a1 / gg_a2 #+ plot_layout(axes='collect')
-fig6a <- wrap_elements(full=fig6a)
+fig5a1 <- gg_a1
+fig5a2 <- gg_a2
+fig5a <- gg_a1 / gg_a2 #+ plot_layout(axes='collect')
+fig5a <- wrap_elements(full=fig5a)
 
 
 
 
 
 ##################
-# Fig.4.B
+# Fig.5.C
 ##########
 
 ###
-# fig6b_left
+# fig5b_left
 ###
 
 gg <- (ggplot(data=df_rec_pivot_long %>% filter(name %in% c('norm_ratio') & (anno2 %in% c('MGE\nrecombinase'))), aes(x=Habitat, y=value, color=Habitat)) 
@@ -133,11 +133,11 @@ gg <- (ggplot(data=df_rec_pivot_long %>% filter(name %in% c('norm_ratio') & (ann
        + theme(strip.background = element_rect(fill=alpha(col_purple, 0.4)))
        + labs(x='', y='Normalized active ratio')
        )
-fig6b_left <- gg
+fig5c_left <- gg
 
 
 ###
-#  fig6c_right
+#  fig5c_right
 ###
 df <- df_pre %>%
     dplyr::mutate(anno=if_else(stringr::str_starts(string = ko, 'rec__'), ko, anno)) %>%
@@ -168,7 +168,7 @@ gg <- (ggplot(data=df_rec_pivot_long %>% dplyr::filter(name=='norm_ratio' & ko %
        + guides(x=guide_axis(angle = 45))
        + labs(x='', y=element_blank())
        )
-fig6b_mid <- gg
+fig5c_mid <- gg
 
 gg <- (ggplot(data=df_rec_pivot_long %>% dplyr::filter(name=='norm_ratio' & ko %in% c('Phage')) %>% dplyr::mutate(ko=if_else(ko=='Phage', 'Phage\n', ko)), 
               aes(x=Habitat, y=value, color=Habitat)) 
@@ -183,14 +183,14 @@ gg <- (ggplot(data=df_rec_pivot_long %>% dplyr::filter(name=='norm_ratio' & ko %
        + labs(x='', y=element_blank())
        )
 
-fig6b_right <- gg
-fig6b <- fig6b_left + fig6b_mid + fig6b_right
-fig6b <- wrap_elements(full=fig6b)
+fig5c_right <- gg
+fig5c <- fig5c_left + fig5c_mid + fig5c_right
+fig5c <- wrap_elements(full=fig5c)
 
 
 ###################
-# Fig.4.C
-#############
+# Fig.5 - by phylum
+###################
 
 
 ### PR include all RP gene shared between bac and arc
@@ -275,16 +275,16 @@ df_by_taxa <- df_by_taxa %>%
     mutate(active_ratio_norm = active_ratio/base_active_ratio)
 
 
-phylum_level_fig6b <- df_by_taxa %>%
+phylum_level_fig5b <- df_by_taxa %>%
     group_by(phylum) %>%
     summarise(active_ratio_norm = mean(active_ratio_norm)) %>%
     arrange(desc(active_ratio_norm)) %>%
     pull(phylum)
 
 df_by_taxa <- df_by_taxa %>%
-    mutate(phylum = factor(phylum, levels = phylum_level_fig6b))
+    mutate(phylum = factor(phylum, levels = phylum_level_fig5b))
 
-phylum_level_fig6b <- df_by_taxa %>%
+phylum_level_fig5b <- df_by_taxa %>%
     group_by(phylum) %>%
     filter(gene_name %in% c('CE', 'Integron', 'IS_Tn', 'Phage')) %>%
     summarise(active_ratio_norm = sum(active_ratio_norm)) %>%
@@ -292,7 +292,7 @@ phylum_level_fig6b <- df_by_taxa %>%
     pull(phylum)
 
 df_by_taxa <- df_by_taxa %>%
-    mutate(phylum = factor(phylum, levels = phylum_level_fig6b))
+    mutate(phylum = factor(phylum, levels = phylum_level_fig5b))
 
 gg <- (ggplot(data=df_by_taxa %>% filter(gene_name %in% c('CE', 'Integron', 'IS_Tn', 'Phage')), aes(x=phylum, y=active_ratio_norm, fill=domain)) + geom_col() 
        + facet_wrap(~gene_name, ncol=1, scales='free_y')
@@ -305,12 +305,12 @@ gg <- (ggplot(data=df_by_taxa %>% filter(gene_name %in% c('CE', 'Integron', 'IS_
        #+ theme(strip.background = element_rect(fill=alpha(col_purple, 1)))
         )
 
-fig6c <- gg
-fig6c <- wrap_elements(full=fig6c)
+fig5c <- gg
+fig5c <- wrap_elements(full=fig5c)
 
 
 #########
-# Fig.4.D
+# Fig.5.B
 ###########
 
 ###
@@ -398,7 +398,7 @@ fig7a <- gg
 
 
 ##########################
-# Fig.4.D.partial_carriage
+# Fig.5.B.partial_carriage
 #############################
 
 ### partial carriage
@@ -460,7 +460,7 @@ gg <- (ggplot(data=df_all_summary, aes(x=origin, y=carriage_type_prop, fill=orig
 fig8a <- gg
 
 ################
-# Fig.4.D.metat
+# Fig.5.B.metat
 #################
 ### metaT on recomibnase OTU stability or activity
 ### cov_0d9
@@ -530,12 +530,12 @@ layout <- '
 ###
 ABC
 '
-fig6_extra <- list(
+fig5_extra <- list(
     (fig9a & labs(y='Transcription') & coord_flip() & theme(axis.text.y = element_text(margin = margin('l', 0)))),
     (fig7a & labs(y='Genomic context change') & coord_flip() & theme(axis.text.y = element_blank())),
     (fig8a & labs(y='Partial carriage by population') & coord_flip() & theme(axis.text.y = element_blank()))
 ) %>% wrap_plots(design=layout, widths = c(1, 1, 1)) + plot_layout(tag_level = 'new')
-fig6_extra <- wrap_elements(full=fig6_extra)
+fig5_extra <- wrap_elements(full=fig5_extra)
 
 options(repr.plot.width=7.2, repr.plot.height=7, repr.plot.res=300)
 layout <- '
@@ -543,16 +543,16 @@ AB
 AC
 DD
 '
-fig6_add_extra <- fig6a + fig6b + fig6c + fig6_extra + 
+fig5_add_extra <- fig5a + fig5b + fig5c + fig5_extra + 
     plot_layout(widths = c(2.5,4), heights = c(1.1,1.3,1), design=layout, guides = 'collect') + 
     plot_annotation(tag_levels = 'A')
-p <- fig6_add_extra
+p <- fig5_add_extra
 
 figdir <- here::here('fig.outdir')
 dir.create(figdir)
 
-figfile <- here::here(figdir, 'fig.4.metat.add_extra.pdf')
+figfile <- here::here(figdir, 'Fig.5.metat.add_extra.pdf')
 ggsave(figfile, p, width = 7.2, height = 8, dpi = 300, device = 'pdf')
 
-#figfile <- here::here(figdir, 'fig.4.metat.add_extra.png')
+#figfile <- here::here(figdir, 'Fig.5.metat.add_extra.png')
 #ggsave(figfile, p, width = 7.2, height = 8, dpi = 300, device = 'png')

@@ -4,8 +4,82 @@ source(here::here('setup.R'))
 # Fig.2.A is from external images
 ###
 
-###
+#########
 # Fig.2.B
+#########
+
+# donut plot of rec vs. all genes
+
+tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/all_gene.ko_cnt_w_clu.tsv'
+
+df_donut <- read_tsv(tab_f, col_types = cols(), col_names = c('gene', 'count')) %>%
+    mutate(group = if_else(stringr::str_starts(gene, 'K'), 'Annotated',
+                          if_else(stringr::str_starts(gene, 'OTU'), 'Unannotated',
+                                 if_else(gene == 'recombinase', 'MGE recombinase', gene)))) %>%
+    group_by(group) %>%
+    summarise(count = sum(count)) %>%
+    ungroup()
+
+df_donut2 <- df_donut
+
+df_donut2 <- df_donut2 %>%
+    mutate(perc = round(100 * count / sum(count), digits = 1)) %>%
+    mutate(group = factor(group, levels = c('MGE recombinase', 'Annotated', 'Unannotated'))) %>%
+    mutate(group2 = stringr::str_c(group, '\n(', perc, '%)'))
+
+
+total_cnt <- sum(df_donut2$count)
+total_cnt <- sprintf('%.1fM', total_cnt / 1e+6)
+
+pal <- c(RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=2), 'grey50')[1:3]
+
+names(pal) <- c('MGE recombinase', 'Annotated', 'Unannotated')
+
+options(repr.plot.width = 2.5, repr.plot.height = 2.5, repr.plot.res = 300)
+gg <- ggpubr::ggdonutchart(df_donut2, 'count', label = 'group2', lab.pos = 'out', fill = 'group', color= 'group', lab.font = c(3, 'plain', 'black'), palette = pal) +
+    theme(legend.position = 'none') +
+    annotate(geom = 'text', x = 0.5, y = 0, label = total_cnt, size = 3)
+
+fig2b <- gg
+
+
+
+
+###
+# Fig.2.C
+###
+
+tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/all_gene.ko_cnt_w_clu.tsv'
+df <- read_tsv(tab_f, col_types = cols(), col_names = c('gene', 'count'))
+df_sub <- df %>% head(n=5) 
+
+col_purple <- RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=1)
+
+df_tmp3 <- df_sub %>% mutate(anno=gene)
+df_tmp3 <- df_tmp3 %>% 
+    mutate(fill=if_else(anno=='recombinase', col_purple, 'NA'))
+
+color_pal <- df_tmp3$fill
+names(color_pal) <- df_tmp3$anno
+options(repr.plot.width=2.8, repr.plot.height=2, repr.plot.res=300)
+gg <- (ggplot(data=df_tmp3, aes(x=factor(anno, levels=(anno)), y=count, fill=anno)) + geom_col(color='grey20') 
+       + theme_classic() 
+       + theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1), legend.position = 'none')
+       + scale_fill_manual(values = color_pal)
+       + scale_y_continuous(breaks = c(500000, 1000000, 1500000, 2000000), labels = c('0.5M', '1M', '1.5M', '2M'))
+       + scale_x_discrete(labels = c('MGE\nrecombinase', 'rpoE', 'drrA', 'ABC.CD.P', 'pknB'))
+#        + scale_x_discrete(labels = c('MGE recombinase', 'K03088\nRNA polymerase sigma-70 factor', 
+#                                      'K09687\nantibiotic transport system ATP-binding protein',
+#                                     'K02004\nputative ABC transport system permease', 'K08884\nserine/threonine protein kinase'))
+       + labs(x="", y="Gene count")
+      )
+
+fig2c <- gg
+
+
+
+###
+# Fig.2.C
 ###
 
 tab_f <- 'som-data/mge_recombinase.tsv'
@@ -58,79 +132,10 @@ gg <- (ggplot(data=df1, aes(x=Habitat, y=perc, fill=origin))
        + labs(x='', y='MGE recombinases (%)')
 )
 
-fig2b <- gg
-
-
-
-#########
-# Fig.2.C
-#########
-
-# donut plot of rec vs. all genes
-
-tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/all_gene.ko_cnt_w_clu.tsv'
-
-df_donut <- read_tsv(tab_f, col_types = cols(), col_names = c('gene', 'count')) %>%
-    mutate(group = if_else(stringr::str_starts(gene, 'K'), 'Annotated',
-                          if_else(stringr::str_starts(gene, 'OTU'), 'Unannotated',
-                                 if_else(gene == 'recombinase', 'MGE recombinase', gene)))) %>%
-    group_by(group) %>%
-    summarise(count = sum(count)) %>%
-    ungroup()
-
-df_donut2 <- df_donut
-
-df_donut2 <- df_donut2 %>%
-    mutate(perc = round(100 * count / sum(count), digits = 1)) %>%
-    mutate(group = factor(group, levels = c('MGE recombinase', 'Annotated', 'Unannotated'))) %>%
-    mutate(group2 = stringr::str_c(group, '\n(', perc, '%)'))
-
-
-total_cnt <- sum(df_donut2$count)
-total_cnt <- sprintf('%.1fM', total_cnt / 1e+6)
-
-pal <- c(RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=2), 'grey50')[1:3]
-
-names(pal) <- c('MGE recombinase', 'Annotated', 'Unannotated')
-
-options(repr.plot.width = 2.5, repr.plot.height = 2.5, repr.plot.res = 300)
-gg <- ggpubr::ggdonutchart(df_donut2, 'count', label = 'group2', lab.pos = 'out', fill = 'group', color= 'group', lab.font = c(3, 'plain', 'black'), palette = pal) +
-    theme(legend.position = 'none') +
-    annotate(geom = 'text', x = 0.5, y = 0, label = total_cnt, size = 3)
-
-fig2c <- gg
-
-
-###
-# Fig.2.D
-###
-
-tab_f <- 'som-data/fig-data/20230123_mge_recombinase/recombinase/all_gene.ko_cnt_w_clu.tsv'
-df <- read_tsv(tab_f, col_types = cols(), col_names = c('gene', 'count'))
-df_sub <- df %>% head(n=5) 
-
-col_purple <- RColorBrewer::brewer.pal(n = 3, name='BuPu') %>% rev %>% head(n=1)
-
-df_tmp3 <- df_sub %>% mutate(anno=gene)
-df_tmp3 <- df_tmp3 %>% 
-    mutate(fill=if_else(anno=='recombinase', col_purple, 'NA'))
-
-color_pal <- df_tmp3$fill
-names(color_pal) <- df_tmp3$anno
-options(repr.plot.width=2.8, repr.plot.height=2, repr.plot.res=300)
-gg <- (ggplot(data=df_tmp3, aes(x=factor(anno, levels=(anno)), y=count, fill=anno)) + geom_col(color='grey20') 
-       + theme_classic() 
-       + theme(axis.text.x=element_text(angle=45, hjust=1, vjust=1), legend.position = 'none')
-       + scale_fill_manual(values = color_pal)
-       + scale_y_continuous(breaks = c(500000, 1000000, 1500000, 2000000), labels = c('0.5M', '1M', '1.5M', '2M'))
-       + scale_x_discrete(labels = c('MGE\nrecombinase', 'rpoE', 'drrA', 'ABC.CD.P', 'pknB'))
-#        + scale_x_discrete(labels = c('MGE recombinase', 'K03088\nRNA polymerase sigma-70 factor', 
-#                                      'K09687\nantibiotic transport system ATP-binding protein',
-#                                     'K02004\nputative ABC transport system permease', 'K08884\nserine/threonine protein kinase'))
-       + labs(x="", y="Gene count")
-      )
-
 fig2d <- gg
+
+
+
 
 
 ###

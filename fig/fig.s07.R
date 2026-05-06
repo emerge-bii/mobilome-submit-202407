@@ -5,7 +5,7 @@ source(here::here('setup.R'))
 ### NOTE: adding 100ani or not has minimal impact on coverage results;
 
 ###
-# fig.S5.ABD
+# fig.S7.ABD
 ###
 
 gene_f <- 'som-data/fig-data/short_vs_long/gene_mapping.allinfo.final.add_longonly.tsv'
@@ -82,17 +82,17 @@ gg3 <- (ggplot(data=df_gene2, aes(x=long_only, y=pi))
         )
 
 
-fig.s3a <- gg1_1 | gg1_2
-fig.s3a <- wrap_elements(full=fig.s3a)
+fig.S7a <- gg1_1 | gg1_2
+fig.S7a <- wrap_elements(full=fig.S7a)
 
-fig.s3b <- gg2_1 | gg2_2
-fig.s3b <- wrap_elements(full=fig.s3b)
+fig.S7b <- gg2_1 | gg2_2
+fig.S7b <- wrap_elements(full=fig.S7b)
 
-fig.s3d <- gg3
+fig.S7d <- gg3
 
 
 ###
-# fig.S5.C
+# fig.S7.C
 ###
 
 ### genomic context variation
@@ -131,10 +131,10 @@ gg <- (ggplot(data=df, aes(x=long_only, y=uniq_cnt))
        + ggpubr::stat_compare_means(label='p.signif', comparisons = comp, vjust=0.5) 
       )
 
-fig.s3c <- gg
+fig.S7c <- gg
 
 ###
-# fig.S5.E
+# fig.S7.E
 ###
 
 ### it's manually made
@@ -146,12 +146,12 @@ BB
 CD
 EE'
 
-fig.s3e <- ggplot() + theme_void()
+fig.S7e <- ggplot() + theme_void()
 
-p <- fig.s3a + fig.s3b + fig.s3c + fig.s3d + fig.s3e + plot_layout(design = layout, heights = c(2,2,1.5,2)) + plot_annotation(tag_levels = 'A')
+p <- fig.S7a + fig.S7b + fig.S7c + fig.S7d + fig.S7e + plot_layout(design = layout, heights = c(2,2,1.5,2)) + plot_annotation(tag_levels = 'A')
 
 figdir <- here::here('fig.outdir')
-figfile <- here::here(figdir, 'fig.s05.short_vs_hybrid.pdf')
+figfile <- here::here(figdir, 'fig.s07.short_vs_hybrid.pdf')
 ggsave(figfile, p, width = 6, height = 6.5, dpi = 300, device = 'pdf')
 
 #figfile <- here::here(figdir, 'fig.s05.short_vs_hybrid.png')
